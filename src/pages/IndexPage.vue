@@ -26,14 +26,14 @@
             <q-item v-bind="itemProps">
               <q-item-section avatar>
                 <q-icon
-                  :name="opt.type === 'country' ? 'public' : opt.type === 'province' ? 'map' : 'location_city'"
-                  :color="opt.type === 'country' ? 'primary' : opt.type === 'province' ? 'teal' : 'orange'"
-                  size="20px"
+                  :name="opt.type === 'province' ? 'map' : 'location_city'"
+                  :color="opt.type === 'province' ? 'teal' : 'orange'"
+                  size="18px"
                 />
               </q-item-section>
               <q-item-section>
                 <q-item-label>{{ opt.label }}</q-item-label>
-                <q-item-label v-if="opt.meta" caption>{{ opt.meta }}</q-item-label>
+                <q-item-label caption class="text-grey-6">{{ opt.breadcrumb }}</q-item-label>
               </q-item-section>
             </q-item>
           </template>
@@ -61,14 +61,14 @@
             <q-item v-bind="itemProps">
               <q-item-section avatar>
                 <q-icon
-                  :name="opt.type === 'country' ? 'public' : opt.type === 'province' ? 'map' : 'location_city'"
-                  :color="opt.type === 'country' ? 'primary' : opt.type === 'province' ? 'teal' : 'orange'"
-                  size="20px"
+                  :name="opt.type === 'province' ? 'map' : 'location_city'"
+                  :color="opt.type === 'province' ? 'teal' : 'orange'"
+                  size="18px"
                 />
               </q-item-section>
               <q-item-section>
                 <q-item-label>{{ opt.label }}</q-item-label>
-                <q-item-label v-if="opt.meta" caption>{{ opt.meta }}</q-item-label>
+                <q-item-label caption class="text-grey-6">{{ opt.breadcrumb }}</q-item-label>
               </q-item-section>
             </q-item>
           </template>

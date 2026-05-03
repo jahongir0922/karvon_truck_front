@@ -56,9 +56,9 @@ export const apiGetCities = (params: { name?: string; country_id?: number; provi
 export interface LocationResult {
   id: number;
   label: string;
-  value: string;
-  type: 'country' | 'province' | 'city';
-  meta?: string;
+  value: string;       // "Mamlakat, Viloyat" yoki "Mamlakat, Viloyat, Shahar"
+  type: 'province' | 'city';
+  breadcrumb: string;  // "Mamlakat › Viloyat › Shahar"
 }
 
 export const apiSearchLocations = (
