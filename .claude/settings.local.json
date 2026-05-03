@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(npm install:*)",
-      "Bash(npx quasar:*)"
+      "Bash(npx quasar:*)",
+      "Bash(xargs -I {} sh -c \"echo '=== {} ===' && head -30 {}\")"
     ]
   }
 }

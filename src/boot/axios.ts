@@ -1,17 +1,22 @@
 import { defineBoot } from '#q-app/wrappers';
 import axios, { type AxiosError } from 'axios';
 import { Loading } from 'quasar';
-import { ref } from 'vue';
 
 export default defineBoot(() => {
   const baseUrl: string = process.env.API_URL || '';
   axios.defaults.baseURL = baseUrl;
-  const err = ref({});
+
+  // Avval saqlangan tokenni o'rnatish
+  const savedToken = localStorage.getItem('x-auth-token');
+  if (savedToken) {
+    axios.defaults.headers.common['x-auth-token'] = savedToken;
+  }
+
   let activeRequests = 0;
   axios.interceptors.request.use(
     (config) => {
-      const token = '';
-      config.headers.Authorization = token ? token : '';
+      const token = localStorage.getItem('x-auth-token');
+      if (token) config.headers['x-auth-token'] = token;
       if (!config.headers['X-Skip-Loading']) {
         activeRequests++;
         if (activeRequests === 1) {
@@ -49,9 +54,11 @@ export default defineBoot(() => {
       }
       const status = error.response ? error.response.status : null;
       if (status === 401) {
-        location.href = '/login';
+        localStorage.removeItem('x-auth-token');
+        delete axios.defaults.headers.common['x-auth-token'];
+        location.href = '/#/login';
       } else if (status === 422) {
-        err.value = error.response.data.errors;
+        // validation errors handled by caller
       } else if (status === 403) {
         // router.push('/pages/error403')
       } else if (error.code != 'ERR_NETWORK') {

@@ -4,15 +4,20 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/',
     component: () => import('layouts/MainLayout.vue'),
-    children: [{ path: '', component: () => import('pages/IndexPage.vue') }],
+    children: [
+      { path: '', component: () => import('pages/IndexPage.vue') },
+      { path: 'create-ads', component: () => import('pages/CreateAd.vue') },
+      {
+        path: 'my-ads',
+        component: () => import('pages/MyAds.vue'),
+        meta: { requiresAuth: true },
+      },
+    ],
   },
   {
-    path: '/create-ads',
-    component: () => import('layouts/MainLayout.vue'),
-    children: [{ path: '', component: () => import('pages/CreateAd.vue') }],
+    path: '/login',
+    component: () => import('pages/LoginPage.vue'),
   },
-  // Always leave this as last one,
-  // but you can also remove it
   {
     path: '/:catchAll(.*)*',
     component: () => import('pages/ErrorNotFound.vue'),

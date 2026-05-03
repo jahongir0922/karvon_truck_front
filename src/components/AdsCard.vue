@@ -1,65 +1,66 @@
 <template>
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-    <q-card v-for="(ad, index) in ads" :key="index" class="my-card p-4">
-      <div class="flex justify-center gap-1 items-center">
-        <span class="title text-primary">{{ ad.fromAddress }}</span>
-        <div class="text-center">
-          <q-icon class="text-primary" name="arrow_forward" />
-        </div>
-        <span class="title text-primary">{{ ad.toAddress }}</span>
+    <q-card v-for="ad in ads" :key="ad._id" class="p-4">
+      <div class="flex justify-center gap-1 items-center mb-1">
+        <span class="font-bold text-primary">{{ ad.fromAddress }}</span>
+        <q-icon class="text-primary" name="arrow_forward" />
+        <span class="font-bold text-primary">{{ ad.toAddress }}</span>
       </div>
+      <q-badge v-if="ad.isAI" color="purple" class="mb-2">AI</q-badge>
+
       <q-separator />
-      <div class="flex items-center justify-between gap-2">
-        <span class="title">Mashina:</span>
-        <span class="text">
-          <template v-for="(truckType, index) in ad.truckType" :key="index">
-            {{ truckType + `${ad.truckType?.length - 1 > index ? '/' : ''}` }}
-          </template>
+      <div class="flex items-center justify-between gap-2 py-1">
+        <span class="text-grey-7 text-sm">Mashina:</span>
+        <span class="text-sm font-medium">{{ ad.truckType?.join(' / ') || '—' }}</span>
+      </div>
+
+      <q-separator />
+      <div class="flex items-center justify-between gap-2 py-1">
+        <span class="text-grey-7 text-sm">Yuk:</span>
+        <span class="text-sm">
+          {{ [ad.loadName, ad.weight ? ad.weight + ' t' : '', ad.volume ? ad.volume + ' m³' : ''].filter(Boolean).join(', ') || '—' }}
         </span>
       </div>
+
+      <template v-if="ad.descriptions">
+        <q-separator />
+        <div class="flex items-start justify-between gap-2 py-1">
+          <span class="text-grey-7 text-sm">Qo'shimcha:</span>
+          <p class="text-sm text-right">{{ ad.descriptions }}</p>
+        </div>
+      </template>
+
       <q-separator />
-      <div class="flex items-center justify-between gap-2">
-        <span class="title">Yuk:</span>
-        <span class="text">{{
-          (ad.loadName ? ad.loadName : '') +
-          (ad.weight ? (ad.loadName ? ', ' : '') + ad.weight + ' tonna' : '') +
-          (ad.volume ? (ad.weight ? ', ' : '') + ad.volume + ' kub' : '')
-        }}</span>
+      <div class="flex items-center justify-between gap-2 py-1">
+        <span class="text-grey-7 text-sm">To'lov:</span>
+        <span class="text-sm">{{ ad.paymentType || '—' }}</span>
       </div>
+
       <q-separator />
-      <div class="flex items-center justify-between gap-2">
-        <span class="title">Qo'shimcha:</span>
-        <p class="text text-justify">
-          {{ ad.descriptions }}
-        </p>
+      <div class="flex items-center justify-between gap-2 py-1">
+        <span class="text-grey-7 text-sm">Avans:</span>
+        <span class="text-sm">{{ ad.advance ? ad.advance + ' ' + (ad.currency || '') : '—' }}</span>
       </div>
+
       <q-separator />
-      <div class="flex items-center justify-between gap-4">
-        <span class="title">Tolov turi:</span>
-        <span class="text">{{ ad.paymentType }}</span>
+      <div class="flex items-center justify-between gap-2 py-1">
+        <span class="text-grey-7 text-sm">Yo'l haqi:</span>
+        <span class="text-sm">{{ ad.deliveryCost ? ad.deliveryCost + ' ' + (ad.currency || '') : '—' }}</span>
       </div>
-      <q-separator />
-      <div class="flex items-center justify-between gap-4">
-        <span class="title">Avans:</span>
-        <span class="text">{{ ad.advance }}</span>
-      </div>
-      <q-separator />
-      <div class="flex items-center justify-between gap-4">
-        <span class="title">Yo'l haqi:</span>
-        <span class="text">{{ ad.deliveryCost }}</span>
-      </div>
+
       <q-separator />
       <div class="flex items-center justify-between py-2">
-        <div class="flex items-center gap-1">
-          <q-icon size="20px" avatar name="event" />
-          <span class="text"> {{ ad.loadingTime }} </span>
+        <div class="flex items-center gap-1 text-sm text-grey-7">
+          <q-icon name="event" size="16px" />
+          {{ ad.loadingTime ? new Date(ad.loadingTime).toLocaleDateString('uz-UZ') : '—' }}
         </div>
-        <a class="text text-primary" :href="'tel:' + ad.phone">{{ ad.phone }}</a>
+        <a class="text-sm text-primary font-medium" :href="'tel:' + ad.phone">{{ ad.phone }}</a>
       </div>
     </q-card>
   </div>
 </template>
 
 <script setup lang="ts">
-defineProps(['ads']);
+import type { Advertisement } from 'src/types';
+defineProps<{ ads: Advertisement[] }>();
 </script>
