@@ -55,10 +55,9 @@ export const apiGetCities = (params: { name?: string; country_id?: number; provi
 // ─── Locations (unified search) ──────────────────────────────────────────────
 export interface LocationResult {
   id: number;
-  label: string;
-  value: string;       // "Mamlakat, Viloyat" yoki "Mamlakat, Viloyat, Shahar"
+  label: string;  // "O'zbekiston, Toshkent" yoki "O'zbekiston, Toshkent, Chirchiq"
+  value: string;  // label bilan bir xil
   type: 'province' | 'city';
-  breadcrumb: string;  // "Mamlakat › Viloyat › Shahar"
 }
 
 export const apiSearchLocations = (

@@ -24,17 +24,7 @@
         >
           <template #option="{ itemProps, opt }">
             <q-item v-bind="itemProps">
-              <q-item-section avatar>
-                <q-icon
-                  :name="opt.type === 'province' ? 'map' : 'location_city'"
-                  :color="opt.type === 'province' ? 'teal' : 'orange'"
-                  size="18px"
-                />
-              </q-item-section>
-              <q-item-section>
-                <q-item-label>{{ opt.label }}</q-item-label>
-                <q-item-label caption class="text-grey-6">{{ opt.breadcrumb }}</q-item-label>
-              </q-item-section>
+              <q-item-section>{{ opt.label }}</q-item-section>
             </q-item>
           </template>
           <template #no-option>
@@ -59,17 +49,7 @@
         >
           <template #option="{ itemProps, opt }">
             <q-item v-bind="itemProps">
-              <q-item-section avatar>
-                <q-icon
-                  :name="opt.type === 'province' ? 'map' : 'location_city'"
-                  :color="opt.type === 'province' ? 'teal' : 'orange'"
-                  size="18px"
-                />
-              </q-item-section>
-              <q-item-section>
-                <q-item-label>{{ opt.label }}</q-item-label>
-                <q-item-label caption class="text-grey-6">{{ opt.breadcrumb }}</q-item-label>
-              </q-item-section>
+              <q-item-section>{{ opt.label }}</q-item-section>
             </q-item>
           </template>
           <template #no-option>

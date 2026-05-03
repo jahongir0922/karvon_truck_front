@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col p-3 gap-3 max-w-[800px] mx-auto">
+  <q-form ref="formRef" class="flex flex-col p-3 gap-3 max-w-[800px] mx-auto">
     <div class="text-lg font-bold">Yangi yuk e'loni</div>
 
     <!-- Yo'nalish -->
@@ -24,20 +24,12 @@
         map-options
         @filter="filterFrom"
         behavior="menu"
+        :rules="[(v) => !!v || 'Majburiy maydon']"
+        lazy-rules
       >
         <template #option="{ itemProps, opt }">
           <q-item v-bind="itemProps">
-            <q-item-section avatar>
-              <q-icon
-                :name="opt.type === 'province' ? 'map' : 'location_city'"
-                :color="opt.type === 'province' ? 'teal' : 'orange'"
-                size="18px"
-              />
-            </q-item-section>
-            <q-item-section>
-              <q-item-label>{{ opt.label }}</q-item-label>
-              <q-item-label caption class="text-grey-6">{{ opt.breadcrumb }}</q-item-label>
-            </q-item-section>
+            <q-item-section>{{ opt.label }}</q-item-section>
           </q-item>
         </template>
         <template #no-option>
@@ -60,20 +52,12 @@
         map-options
         @filter="filterTo"
         behavior="menu"
+        :rules="[(v) => !!v || 'Majburiy maydon']"
+        lazy-rules
       >
         <template #option="{ itemProps, opt }">
           <q-item v-bind="itemProps">
-            <q-item-section avatar>
-              <q-icon
-                :name="opt.type === 'province' ? 'map' : 'location_city'"
-                :color="opt.type === 'province' ? 'teal' : 'orange'"
-                size="18px"
-              />
-            </q-item-section>
-            <q-item-section>
-              <q-item-label>{{ opt.label }}</q-item-label>
-              <q-item-label caption class="text-grey-6">{{ opt.breadcrumb }}</q-item-label>
-            </q-item-section>
+            <q-item-section>{{ opt.label }}</q-item-section>
           </q-item>
         </template>
         <template #no-option>
@@ -145,7 +129,7 @@
       <q-input filled v-model="form.loadingTime" label="Yuklash vaqti" type="date" />
 
       <!-- Telefon -->
-      <q-input filled v-model="form.phone" label="Telefon *" />
+      <q-input filled v-model="form.phone" label="Telefon *" :rules="[(v) => !!v || 'Majburiy maydon']" lazy-rules />
 
       <!-- Mijoz ismi -->
       <q-input filled v-model="form.clientName" label="Murojaat uchun (ism)" />
@@ -157,12 +141,12 @@
       <q-btn flat label="Tozalash" @click="resetForm" />
       <q-btn color="primary" label="E'lon qo'shish" :loading="loading" @click="submitAd" />
     </div>
-  </div>
+  </q-form>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue';
-import { useQuasar } from 'quasar';
+import { useQuasar, QForm } from 'quasar';
 import { apiCreateAd } from 'src/api';
 import { useLocationSearch } from 'src/composables/useLocationSearch';
 
@@ -172,6 +156,7 @@ const TRUCK_TYPES = ['Tent', 'Ref', 'Plashchaniy', 'Konteyner', 'Bortovoy', 'Sam
 const PAYMENT_TYPES = ['Naqd', "Pul o'tkazish"];
 const CURRENCIES = ['UZS', 'USD', 'RUB'];
 
+const formRef = ref<QForm | null>(null);
 const loading = ref(false);
 const errorMsg = ref('');
 
@@ -226,10 +211,8 @@ onMounted(() => {
 
 async function submitAd() {
   errorMsg.value = '';
-  if (!form.direction) { errorMsg.value = 'Yo\'nalish tanlang'; return; }
-  if (!form.fromAddress) { errorMsg.value = '"Qayerdan" maydoni to\'ldirilishi shart'; return; }
-  if (!form.toAddress) { errorMsg.value = '"Qayerga" maydoni to\'ldirilishi shart'; return; }
-  if (!form.phone) { errorMsg.value = 'Telefon raqam kiritilishi shart'; return; }
+  const valid = await formRef.value?.validate();
+  if (!valid) return;
 
   loading.value = true;
   try {
