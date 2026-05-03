@@ -4,8 +4,8 @@
 
     <!-- Yo'nalish -->
     <div class="flex gap-4">
-      <q-radio v-model="form.direction" val="international" label="Xalqaro" />
-      <q-radio v-model="form.direction" val="intercity" label="Shaharlararo" />
+      <q-radio v-model="form.direction" val="international" label="Xalqaro" @update:model-value="onDirectionChange" />
+      <q-radio v-model="form.direction" val="intercity" label="Shaharlararo" @update:model-value="onDirectionChange" />
     </div>
 
     <section class="grid sm:grid-cols-2 gap-3">
@@ -18,12 +18,23 @@
         input-debounce="400"
         label="Qayerdan *"
         :options="fromOptions"
-        @filter="(v, u) => searchLocation(v, u, 'from')"
+        option-label="label"
+        option-value="value"
+        emit-value
+        map-options
+        @filter="filterFrom"
         behavior="menu"
-        :rules="[(v) => !!v || 'Majburiy maydon']"
       >
+        <template #option="{ itemProps, opt }">
+          <q-item v-bind="itemProps">
+            <q-item-section>
+              <q-item-label>{{ opt.label }}</q-item-label>
+              <q-item-label v-if="opt.meta" caption>{{ opt.meta }}</q-item-label>
+            </q-item-section>
+          </q-item>
+        </template>
         <template #no-option>
-          <q-item><q-item-section class="text-grey">Topilmadi</q-item-section></q-item>
+          <q-item><q-item-section class="text-grey">Qidirish uchun matn kiriting</q-item-section></q-item>
         </template>
       </q-select>
 
@@ -36,12 +47,23 @@
         input-debounce="400"
         label="Qayerga *"
         :options="toOptions"
-        @filter="(v, u) => searchLocation(v, u, 'to')"
+        option-label="label"
+        option-value="value"
+        emit-value
+        map-options
+        @filter="filterTo"
         behavior="menu"
-        :rules="[(v) => !!v || 'Majburiy maydon']"
       >
+        <template #option="{ itemProps, opt }">
+          <q-item v-bind="itemProps">
+            <q-item-section>
+              <q-item-label>{{ opt.label }}</q-item-label>
+              <q-item-label v-if="opt.meta" caption>{{ opt.meta }}</q-item-label>
+            </q-item-section>
+          </q-item>
+        </template>
         <template #no-option>
-          <q-item><q-item-section class="text-grey">Topilmadi</q-item-section></q-item>
+          <q-item><q-item-section class="text-grey">Qidirish uchun matn kiriting</q-item-section></q-item>
         </template>
       </q-select>
 
@@ -70,7 +92,14 @@
       <q-input filled v-model="form.loadName" label="Yuk nomi" />
 
       <!-- Yuk tavsifi -->
-      <q-input filled v-model="form.descriptions" label="Yuk tavsifi" type="textarea" rows="2" class="sm:col-span-2" />
+      <q-input
+        filled
+        v-model="form.descriptions"
+        label="Yuk tavsifi"
+        type="textarea"
+        rows="2"
+        class="sm:col-span-2"
+      />
 
       <!-- To'lov turi -->
       <q-select
@@ -102,12 +131,7 @@
       <q-input filled v-model="form.loadingTime" label="Yuklash vaqti" type="date" />
 
       <!-- Telefon -->
-      <q-input
-        filled
-        v-model="form.phone"
-        label="Telefon *"
-        :rules="[(v) => !!v || 'Majburiy maydon']"
-      />
+      <q-input filled v-model="form.phone" label="Telefon *" />
 
       <!-- Mijoz ismi -->
       <q-input filled v-model="form.clientName" label="Murojaat uchun (ism)" />
@@ -123,9 +147,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue';
+import { ref, reactive, onMounted } from 'vue';
 import { useQuasar } from 'quasar';
-import { apiCreateAd, apiGetCountries, apiGetCities } from 'src/api';
+import { apiCreateAd } from 'src/api';
+import { useLocationSearch } from 'src/composables/useLocationSearch';
 
 const $q = useQuasar();
 
@@ -135,54 +160,55 @@ const CURRENCIES = ['UZS', 'USD', 'RUB'];
 
 const loading = ref(false);
 const errorMsg = ref('');
-const fromOptions = ref<string[]>([]);
-const toOptions = ref<string[]>([]);
 
-const form = reactive({
+interface AdForm {
+  direction: 'international' | 'intercity';
+  fromAddress: string;
+  toAddress: string;
+  truckType: string[];
+  loadName: string;
+  descriptions: string;
+  paymentType: string;
+  advance: string;
+  deliveryCost: string;
+  currency: string;
+  volume: number | null;
+  weight: number | null;
+  loadingTime: string;
+  phone: string;
+  clientName: string;
+}
+const form = reactive<AdForm>({
   direction: 'intercity',
   fromAddress: '',
   toAddress: '',
-  truckType: [] as string[],
+  truckType: [],
   loadName: '',
   descriptions: '',
   paymentType: '',
   advance: '',
   deliveryCost: '',
   currency: 'UZS',
-  volume: null as number | null,
-  weight: null as number | null,
+  volume: null,
+  weight: null,
   loadingTime: '',
   phone: '',
   clientName: '',
 });
 
-async function searchLocation(val: string, update: (fn: () => void) => void, side: 'from' | 'to') {
-  if (!val || val.length < 2) {
-    update(() => {
-      if (side === 'from') fromOptions.value = [];
-      else toOptions.value = [];
-    });
-    return;
-  }
-  try {
-    let names: string[] = [];
-    if (form.direction === 'international') {
-      const res = await apiGetCountries();
-      names = res.data.data
-        .filter((c) => c.name.toLowerCase().includes(val.toLowerCase()))
-        .map((c) => c.name);
-    } else {
-      const res = await apiGetCities({ name: val });
-      names = res.data.data.map((c) => c.name);
-    }
-    update(() => {
-      if (side === 'from') fromOptions.value = names;
-      else toOptions.value = names;
-    });
-  } catch {
-    update(() => {});
-  }
+const { fromOptions, toOptions, loadInitial, filterFrom, filterTo, clearOptions } = useLocationSearch(
+  () => form.direction,
+);
+
+function onDirectionChange() {
+  form.fromAddress = '';
+  form.toAddress = '';
+  void loadInitial();
 }
+
+onMounted(() => {
+  void loadInitial();
+});
 
 async function submitAd() {
   errorMsg.value = '';
@@ -198,19 +224,18 @@ async function submitAd() {
       fromAddress: form.fromAddress,
       toAddress: form.toAddress,
       truckType: form.truckType,
-      loadName: form.loadName || undefined,
-      descriptions: form.descriptions || undefined,
-      paymentType: form.paymentType || undefined,
-      advance: form.advance || undefined,
-      deliveryCost: form.deliveryCost || undefined,
-      currency: form.currency || undefined,
-      volume: form.volume ?? undefined,
-      weight: form.weight ?? undefined,
-      loadingTime: form.loadingTime || undefined,
+      ...(form.loadName && { loadName: form.loadName }),
+      ...(form.descriptions && { descriptions: form.descriptions }),
+      ...(form.paymentType && { paymentType: form.paymentType }),
+      ...(form.advance && { advance: form.advance }),
+      ...(form.deliveryCost && { deliveryCost: form.deliveryCost }),
+      ...(form.currency && { currency: form.currency }),
+      ...(form.volume !== null && { volume: form.volume }),
+      ...(form.weight !== null && { weight: form.weight }),
+      ...(form.loadingTime && { loadingTime: form.loadingTime }),
       phone: form.phone,
-      clientName: form.clientName || undefined,
+      ...(form.clientName && { clientName: form.clientName }),
     });
-
     $q.notify({ type: 'positive', message: 'E\'lon muvaffaqiyatli qo\'shildi!' });
     resetForm();
   } catch {
@@ -236,5 +261,6 @@ function resetForm() {
   form.loadingTime = '';
   form.phone = '';
   form.clientName = '';
+  clearOptions();
 }
 </script>

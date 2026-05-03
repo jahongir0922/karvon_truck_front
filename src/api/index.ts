@@ -51,3 +51,23 @@ export const apiGetCities = (params: { name?: string; country_id?: number; provi
     params,
     headers: { 'X-Skip-Loading': '1' },
   });
+
+// ─── Locations (unified search) ──────────────────────────────────────────────
+export interface LocationResult {
+  id: number;
+  label: string;
+  value: string;
+  type: 'country' | 'province' | 'city';
+  meta?: string;
+}
+
+export const apiSearchLocations = (
+  q: string,
+  direction: 'international' | 'intercity',
+  countryId?: number,
+  limit = 20,
+) =>
+  axios.get<Wrapped<LocationResult[]>>('locations', {
+    params: { q, direction, country_id: countryId, limit },
+    headers: { 'X-Skip-Loading': '1' },
+  });

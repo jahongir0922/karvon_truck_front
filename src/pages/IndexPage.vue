@@ -15,11 +15,26 @@
           input-debounce="400"
           label="Qayerdan"
           :options="fromOptions"
-          @filter="(v, u) => filterLocations(v, u, 'from')"
+          option-label="label"
+          option-value="value"
+          emit-value
+          map-options
+          @filter="filterFrom"
           behavior="menu"
         >
-          <template #no-option><q-item><q-item-section class="text-grey">Topilmadi</q-item-section></q-item></template>
+          <template #option="{ itemProps, opt }">
+            <q-item v-bind="itemProps">
+              <q-item-section>
+                <q-item-label>{{ opt.label }}</q-item-label>
+                <q-item-label v-if="opt.meta" caption>{{ opt.meta }}</q-item-label>
+              </q-item-section>
+            </q-item>
+          </template>
+          <template #no-option>
+            <q-item><q-item-section class="text-grey">Qidirish uchun matn kiriting</q-item-section></q-item>
+          </template>
         </q-select>
+
         <q-select
           filled
           v-model="filters.toAddress"
@@ -28,11 +43,26 @@
           input-debounce="400"
           label="Qayerga"
           :options="toOptions"
-          @filter="(v, u) => filterLocations(v, u, 'to')"
+          option-label="label"
+          option-value="value"
+          emit-value
+          map-options
+          @filter="filterTo"
           behavior="menu"
         >
-          <template #no-option><q-item><q-item-section class="text-grey">Topilmadi</q-item-section></q-item></template>
+          <template #option="{ itemProps, opt }">
+            <q-item v-bind="itemProps">
+              <q-item-section>
+                <q-item-label>{{ opt.label }}</q-item-label>
+                <q-item-label v-if="opt.meta" caption>{{ opt.meta }}</q-item-label>
+              </q-item-section>
+            </q-item>
+          </template>
+          <template #no-option>
+            <q-item><q-item-section class="text-grey">Qidirish uchun matn kiriting</q-item-section></q-item>
+          </template>
         </q-select>
+
         <q-select
           filled
           v-model="filters.truckType"
@@ -75,7 +105,7 @@
 
       <!-- Ads view -->
       <template v-else>
-        <div class="flex gap-2 mb-4 items-center">
+        <div class="flex gap-2 mb-4 items-center flex-wrap">
           <div class="flex gap-4">
             <q-radio v-model="direction" val="international" label="Xalqaro" @update:model-value="onDirectionChange" />
             <q-radio v-model="direction" val="intercity" label="Shaharlararo" @update:model-value="onDirectionChange" />
@@ -103,22 +133,27 @@
 <script setup lang="ts">
 import { ref, computed, reactive, onMounted } from 'vue';
 import AdsCard from 'components/AdsCard.vue';
-import { apiGetAds, apiGetCountries, apiGetCities } from 'src/api';
+import { apiGetAds } from 'src/api';
+import { useLocationSearch } from 'src/composables/useLocationSearch';
 import type { Advertisement } from 'src/types';
 
 const TRUCK_TYPES = ['Tent', 'Ref', 'Plashchaniy', 'Konteyner', 'Bortovoy', 'Samosvал'];
 
-// ─── State ────────────────────────────────────────────────────────────────────
-const direction = ref('');
+// ─── Direction ────────────────────────────────────────────────────────────────
+const direction = ref<'international' | 'intercity'>(
+  (localStorage.getItem('direction') as 'international' | 'intercity') || 'intercity',
+);
 const directionChosen = ref(!!localStorage.getItem('direction'));
-if (directionChosen.value) direction.value = localStorage.getItem('direction') ?? '';
 
+// ─── Location search ──────────────────────────────────────────────────────────
+const { fromOptions, toOptions, loadInitial, filterFrom, filterTo } = useLocationSearch(
+  () => direction.value,
+);
+
+// ─── Ads ──────────────────────────────────────────────────────────────────────
 const drawerOpen = ref(false);
 const loading = ref(false);
 const allAds = ref<Advertisement[]>([]);
-
-const fromOptions = ref<string[]>([]);
-const toOptions = ref<string[]>([]);
 
 const filters = reactive({
   fromAddress: '',
@@ -132,40 +167,32 @@ const filters = reactive({
 
 // ─── Computed ─────────────────────────────────────────────────────────────────
 const activeFilterCount = computed(() => {
-  let count = 0;
-  if (filters.fromAddress) count++;
-  if (filters.toAddress) count++;
-  if (filters.truckType.length) count++;
-  if (filters.priceFrom !== null) count++;
-  if (filters.priceTo !== null) count++;
-  if (filters.weightFrom !== null) count++;
-  if (filters.weightTo !== null) count++;
-  return count;
+  let n = 0;
+  if (filters.fromAddress) n++;
+  if (filters.toAddress) n++;
+  if (filters.truckType.length) n++;
+  if (filters.priceFrom !== null) n++;
+  if (filters.priceTo !== null) n++;
+  if (filters.weightFrom !== null) n++;
+  if (filters.weightTo !== null) n++;
+  return n;
 });
 
-const filteredAds = computed(() => {
-  return allAds.value.filter((ad) => {
+const filteredAds = computed(() =>
+  allAds.value.filter((ad) => {
     if (ad.direction !== direction.value) return false;
-
     if (filters.fromAddress && !ad.fromAddress.toLowerCase().includes(filters.fromAddress.toLowerCase())) return false;
     if (filters.toAddress && !ad.toAddress.toLowerCase().includes(filters.toAddress.toLowerCase())) return false;
-
-    if (filters.truckType.length) {
-      const hasType = filters.truckType.some((t) => ad.truckType?.includes(t));
-      if (!hasType) return false;
-    }
-
+    if (filters.truckType.length && !filters.truckType.some((t) => ad.truckType?.includes(t))) return false;
     const cost = Number(ad.deliveryCost);
     if (filters.priceFrom !== null && cost < filters.priceFrom) return false;
     if (filters.priceTo !== null && cost > filters.priceTo) return false;
-
     const w = Number(ad.weight);
     if (filters.weightFrom !== null && w < filters.weightFrom) return false;
     if (filters.weightTo !== null && w > filters.weightTo) return false;
-
     return true;
-  });
-});
+  }),
+);
 
 // ─── Methods ──────────────────────────────────────────────────────────────────
 function confirmDirection() {
@@ -177,6 +204,7 @@ function confirmDirection() {
 function onDirectionChange() {
   localStorage.setItem('direction', direction.value);
   resetFilters();
+  void loadInitial();
   void loadAds();
 }
 
@@ -187,34 +215,6 @@ async function loadAds() {
     allAds.value = res.data.data;
   } finally {
     loading.value = false;
-  }
-}
-
-async function filterLocations(val: string, update: (fn: () => void) => void, side: 'from' | 'to') {
-  if (!val || val.length < 2) {
-    update(() => {
-      if (side === 'from') fromOptions.value = [];
-      else toOptions.value = [];
-    });
-    return;
-  }
-  try {
-    let names: string[] = [];
-    if (direction.value === 'international') {
-      const res = await apiGetCountries();
-      names = res.data.data
-        .filter((c) => c.name.toLowerCase().includes(val.toLowerCase()))
-        .map((c) => c.name);
-    } else {
-      const res = await apiGetCities({ name: val });
-      names = res.data.data.map((c) => c.name);
-    }
-    update(() => {
-      if (side === 'from') fromOptions.value = names;
-      else toOptions.value = names;
-    });
-  } catch {
-    update(() => {});
   }
 }
 
@@ -234,9 +234,10 @@ function setupWebSocket() {
   const ws = new WebSocket(wsUrl);
 
   ws.onmessage = (event) => {
-    const msg = JSON.parse(event.data as string);
+    const msg = JSON.parse(event.data as string) as { type: string; data: Advertisement | Advertisement[] };
     if (msg.type === 'initial_ads') {
-      const newAds = (msg.data as Advertisement[]).filter((a) => !allAds.value.find((x) => x._id === a._id));
+      const incoming = msg.data as Advertisement[];
+      const newAds = incoming.filter((a) => !allAds.value.find((x) => x._id === a._id));
       allAds.value = [...newAds, ...allAds.value];
     } else if (msg.type === 'ad_change') {
       const ad = msg.data as Advertisement;
@@ -246,14 +247,15 @@ function setupWebSocket() {
     }
   };
 
-  ws.onclose = () => {
-    setTimeout(setupWebSocket, 5000);
-  };
+  ws.onclose = () => { setTimeout(setupWebSocket, 5000); };
 }
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 onMounted(() => {
-  if (directionChosen.value) void loadAds();
+  if (directionChosen.value) {
+    void loadAds();
+    void loadInitial();
+  }
   setupWebSocket();
 });
 </script>
