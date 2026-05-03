@@ -1,5 +1,5 @@
 <template>
-  <q-form ref="formRef" class="flex flex-col p-3 gap-3 max-w-[800px] mx-auto">
+  <q-form ref="formRef" class="flex flex-col p-3 gap-3 max-w-[800px] mx-auto" @submit.prevent="submitAd">
     <div class="text-lg font-bold">Yangi yuk e'loni</div>
 
     <!-- Yo'nalish -->
@@ -24,7 +24,10 @@
         map-options
         @filter="filterFrom"
         behavior="menu"
-        :rules="[(v) => !!v || 'Majburiy maydon']"
+        :rules="[
+          (v) => !!v || 'Majburiy maydon',
+          (v) => !v || v.length >= 2 || 'Kamida 2 ta belgi',
+        ]"
         lazy-rules
       >
         <template #option="{ itemProps, opt }">
@@ -52,7 +55,10 @@
         map-options
         @filter="filterTo"
         behavior="menu"
-        :rules="[(v) => !!v || 'Majburiy maydon']"
+        :rules="[
+          (v) => !!v || 'Majburiy maydon',
+          (v) => !v || v.length >= 2 || 'Kamida 2 ta belgi',
+        ]"
         lazy-rules
       >
         <template #option="{ itemProps, opt }">
@@ -87,7 +93,16 @@
       </q-select>
 
       <!-- Yuk nomi -->
-      <q-input filled v-model="form.loadName" label="Yuk nomi" />
+      <q-input
+        filled
+        v-model="form.loadName"
+        label="Yuk nomi"
+        :rules="[
+          (v) => !v || v.length >= 2 || 'Kamida 2 ta belgi',
+          (v) => !v || v.length <= 50 || 'Ko\'pi bilan 50 ta belgi',
+        ]"
+        lazy-rules
+      />
 
       <!-- Yuk tavsifi -->
       <q-input
@@ -97,6 +112,8 @@
         type="textarea"
         rows="2"
         class="sm:col-span-2"
+        :rules="[(v) => !v || v.length <= 500 || 'Ko\'pi bilan 500 ta belgi']"
+        lazy-rules
       />
 
       <!-- To'lov turi -->
@@ -104,14 +121,33 @@
         filled
         v-model="form.paymentType"
         label="To'lov turi"
+        clearable
         :options="PAYMENT_TYPES"
         behavior="menu"
       />
 
       <!-- Avans + Narx + Valyuta -->
-      <div class="flex gap-2">
-        <q-input class="flex-1" filled v-model="form.advance" label="Avans" type="number" />
-        <q-input class="flex-1" filled v-model="form.deliveryCost" label="Narxi" type="number" />
+      <div class="flex gap-2 items-start">
+        <q-input
+          class="flex-1"
+          filled
+          v-model="form.advance"
+          label="Avans"
+          :rules="[
+            (v) => !v || /^\d{1,16}(\.\d{1,4})?$/.test(v) || 'Faqat raqam (masalan: 500 yoki 500.50)',
+          ]"
+          lazy-rules
+        />
+        <q-input
+          class="flex-1"
+          filled
+          v-model="form.deliveryCost"
+          label="Narxi"
+          :rules="[
+            (v) => !v || /^\d{1,16}(\.\d{1,4})?$/.test(v) || 'Faqat raqam (masalan: 1000 yoki 1000.50)',
+          ]"
+          lazy-rules
+        />
         <q-select
           filled
           v-model="form.currency"
@@ -122,24 +158,63 @@
       </div>
 
       <!-- Hajm va vazn -->
-      <q-input filled v-model.number="form.volume" label="Yuk hajmi (m³)" type="number" />
-      <q-input filled v-model.number="form.weight" label="Yuk vazni (tonna)" type="number" />
+      <q-input
+        filled
+        v-model.number="form.volume"
+        label="Yuk hajmi (m³)"
+        type="number"
+        :rules="[
+          (v) => v === null || v === '' || v >= 2 || 'Kamida 2 m³',
+          (v) => v === null || v === '' || v <= 10000 || 'Ko\'pi bilan 10 000 m³',
+        ]"
+        lazy-rules
+      />
+      <q-input
+        filled
+        v-model.number="form.weight"
+        label="Yuk vazni (tonna)"
+        type="number"
+        :rules="[
+          (v) => v === null || v === '' || v >= 2 || 'Kamida 2 tonna',
+          (v) => v === null || v === '' || v <= 50 || 'Ko\'pi bilan 50 tonna',
+        ]"
+        lazy-rules
+      />
 
       <!-- Yuklash vaqti -->
       <q-input filled v-model="form.loadingTime" label="Yuklash vaqti" type="date" />
 
       <!-- Telefon -->
-      <q-input filled v-model="form.phone" label="Telefon *" :rules="[(v) => !!v || 'Majburiy maydon']" lazy-rules />
+      <q-input
+        filled
+        v-model="form.phone"
+        label="Telefon *"
+        :rules="[
+          (v) => !!v || 'Majburiy maydon',
+          (v) => !v || v.length >= 5 || 'Kamida 5 ta belgi',
+          (v) => !v || v.length <= 20 || 'Ko\'pi bilan 20 ta belgi',
+        ]"
+        lazy-rules
+      />
 
       <!-- Mijoz ismi -->
-      <q-input filled v-model="form.clientName" label="Murojaat uchun (ism)" />
+      <q-input
+        filled
+        v-model="form.clientName"
+        label="Murojaat uchun (ism)"
+        :rules="[
+          (v) => !v || v.length >= 2 || 'Kamida 2 ta belgi',
+          (v) => !v || v.length <= 50 || 'Ko\'pi bilan 50 ta belgi',
+        ]"
+        lazy-rules
+      />
     </section>
 
     <div v-if="errorMsg" class="text-negative text-sm">{{ errorMsg }}</div>
 
     <div class="flex justify-end gap-2">
       <q-btn flat label="Tozalash" @click="resetForm" />
-      <q-btn color="primary" label="E'lon qo'shish" :loading="loading" @click="submitAd" />
+      <q-btn color="primary" label="E'lon qo'shish" :loading="loading" type="submit" />
     </div>
   </q-form>
 </template>
@@ -147,6 +222,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue';
 import { useQuasar, QForm } from 'quasar';
+import axios from 'axios';
 import { apiCreateAd } from 'src/api';
 import { useLocationSearch } from 'src/composables/useLocationSearch';
 
@@ -177,6 +253,7 @@ interface AdForm {
   phone: string;
   clientName: string;
 }
+
 const form = reactive<AdForm>({
   direction: 'intercity',
   fromAddress: '',
@@ -233,10 +310,21 @@ async function submitAd() {
       phone: form.phone,
       ...(form.clientName && { clientName: form.clientName }),
     });
-    $q.notify({ type: 'positive', message: 'E\'lon muvaffaqiyatli qo\'shildi!' });
+    $q.notify({ type: 'positive', message: "E'lon muvaffaqiyatli qo'shildi!" });
     resetForm();
-  } catch {
-    errorMsg.value = 'Xatolik yuz berdi. Iltimos, qayta urinib ko\'ring.';
+  } catch (err) {
+    if (axios.isAxiosError(err)) {
+      const msg = err.response?.data?.message;
+      if (Array.isArray(msg)) {
+        errorMsg.value = msg.join(', ');
+      } else if (typeof msg === 'string') {
+        errorMsg.value = msg;
+      } else {
+        errorMsg.value = "Xatolik yuz berdi. Iltimos, qayta urinib ko'ring.";
+      }
+    } else {
+      errorMsg.value = "Xatolik yuz berdi. Iltimos, qayta urinib ko'ring.";
+    }
   } finally {
     loading.value = false;
   }
