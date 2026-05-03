@@ -6,7 +6,9 @@
       "Bash(xargs -I {} sh -c \"echo '=== {} ===' && head -30 {}\")",
       "Bash(npx tsc:*)",
       "Bash(cmd /c \"cd C:\\\\Jahongir\\\\karvon_truck_backend && npx tsc --noEmit 2>&1\")",
-      "Bash(npx --prefix \"C:/Jahongir/karvon_truck_backend\" tsc -p \"C:/Jahongir/karvon_truck_backend/tsconfig.json\" --noEmit)"
+      "Bash(npx --prefix \"C:/Jahongir/karvon_truck_backend\" tsc -p \"C:/Jahongir/karvon_truck_backend/tsconfig.json\" --noEmit)",
+      "Bash(grep -E \"\\\\.\\(ts|js\\)$\")",
+      "Bash(node:*)"
     ]
   }
 }
