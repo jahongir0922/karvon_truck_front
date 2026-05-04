@@ -18,6 +18,9 @@ export const apiCreateUser = (data: { name: string; email: string; password: str
 export const apiGetAds = (params?: { page?: number; perPage?: number }) =>
   axios.get<Wrapped<Advertisement[]>>('advertisements', { params });
 
+export const apiGetMyAds = () =>
+  axios.get<Wrapped<Advertisement[]>>('advertisements/my');
+
 export const apiGetAd = (id: string) =>
   axios.get<Wrapped<Advertisement>>(`advertisements/${id}`);
 
