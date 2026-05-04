@@ -136,9 +136,10 @@ async function handleLogin() {
 async function handleRegister() {
   clearErrors();
   if (!registerForm.name) { errors.name = 'Ism kiritilishi shart'; return; }
+  if (registerForm.name.length < 2) { errors.name = 'Ism kamida 2 ta belgi bo\'lishi kerak'; return; }
   if (!registerForm.email) { errors.email = 'Email kiritilishi shart'; return; }
   if (!registerForm.password) { errors.password = 'Parol kiritilishi shart'; return; }
-  if (registerForm.password.length < 5) { errors.password = 'Parol kamida 5 ta belgi bo\'lishi kerak'; return; }
+  if (registerForm.password.length < 8) { errors.password = 'Parol kamida 8 ta belgi bo\'lishi kerak'; return; }
 
   loading.value = true;
   try {
