@@ -2,8 +2,8 @@
   <div class="flex items-center justify-center min-h-screen bg-grey-2 p-4">
     <q-card class="w-full max-w-[400px] p-4">
       <q-tabs v-model="tab" dense class="text-primary mb-4">
-        <q-tab name="login" label="Kirish" />
-        <q-tab name="register" label="Ro'yxatdan o'tish" />
+        <q-tab name="login" :label="t('auth.loginTab')" />
+        <q-tab name="register" :label="t('auth.registerTab')" />
       </q-tabs>
 
       <!-- Login -->
@@ -13,7 +13,7 @@
             <q-input
               v-model="loginForm.email"
               filled
-              label="Email"
+              :label="t('auth.email')"
               type="email"
               :error="!!errors.email"
               :error-message="errors.email"
@@ -21,7 +21,7 @@
             <q-input
               v-model="loginForm.password"
               filled
-              label="Parol"
+              :label="t('auth.password')"
               :type="showPass ? 'text' : 'password'"
               :error="!!errors.password"
               :error-message="errors.password"
@@ -37,7 +37,7 @@
             <div v-if="errors.general" class="text-negative text-sm">{{ errors.general }}</div>
             <q-btn
               color="primary"
-              label="Kirish"
+              :label="t('auth.loginBtn')"
               class="w-full"
               :loading="loading"
               @click="handleLogin"
@@ -51,14 +51,14 @@
             <q-input
               v-model="registerForm.name"
               filled
-              label="Ism"
+              :label="t('auth.name')"
               :error="!!errors.name"
               :error-message="errors.name"
             />
             <q-input
               v-model="registerForm.email"
               filled
-              label="Email"
+              :label="t('auth.email')"
               type="email"
               :error="!!errors.email"
               :error-message="errors.email"
@@ -66,7 +66,7 @@
             <q-input
               v-model="registerForm.password"
               filled
-              label="Parol"
+              :label="t('auth.password')"
               :type="showPass ? 'text' : 'password'"
               :error="!!errors.password"
               :error-message="errors.password"
@@ -82,7 +82,7 @@
             <div v-if="errors.general" class="text-negative text-sm">{{ errors.general }}</div>
             <q-btn
               color="primary"
-              label="Ro'yxatdan o'tish"
+              :label="t('auth.registerBtn')"
               class="w-full"
               :loading="loading"
               @click="handleRegister"
@@ -97,11 +97,13 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import { useAuthStore } from 'stores/auth';
 
 const auth = useAuthStore();
 const router = useRouter();
 const route = useRoute();
+const { t } = useI18n();
 
 const tab = ref<'login' | 'register'>('login');
 const showPass = ref(false);
@@ -117,8 +119,8 @@ function clearErrors() {
 
 async function handleLogin() {
   clearErrors();
-  if (!loginForm.email) { errors.email = 'Email kiritilishi shart'; return; }
-  if (!loginForm.password) { errors.password = 'Parol kiritilishi shart'; return; }
+  if (!loginForm.email) { errors.email = t('auth.emailRequired'); return; }
+  if (!loginForm.password) { errors.password = t('auth.passwordRequired'); return; }
 
   loading.value = true;
   try {
@@ -127,7 +129,7 @@ async function handleLogin() {
     const redirect = (route.query.redirect as string) || '/';
     await router.push(redirect);
   } catch {
-    errors.general = 'Email yoki parol noto\'g\'ri';
+    errors.general = t('auth.invalidCredentials');
   } finally {
     loading.value = false;
   }
@@ -135,11 +137,11 @@ async function handleLogin() {
 
 async function handleRegister() {
   clearErrors();
-  if (!registerForm.name) { errors.name = 'Ism kiritilishi shart'; return; }
-  if (registerForm.name.length < 2) { errors.name = 'Ism kamida 2 ta belgi bo\'lishi kerak'; return; }
-  if (!registerForm.email) { errors.email = 'Email kiritilishi shart'; return; }
-  if (!registerForm.password) { errors.password = 'Parol kiritilishi shart'; return; }
-  if (registerForm.password.length < 8) { errors.password = 'Parol kamida 8 ta belgi bo\'lishi kerak'; return; }
+  if (!registerForm.name) { errors.name = t('auth.nameRequired'); return; }
+  if (registerForm.name.length < 2) { errors.name = t('auth.nameMin'); return; }
+  if (!registerForm.email) { errors.email = t('auth.emailRequired'); return; }
+  if (!registerForm.password) { errors.password = t('auth.passwordRequired'); return; }
+  if (registerForm.password.length < 8) { errors.password = t('auth.passwordMin'); return; }
 
   loading.value = true;
   try {
@@ -147,7 +149,7 @@ async function handleRegister() {
     tab.value = 'login';
     loginForm.email = registerForm.email;
   } catch {
-    errors.general = 'Ro\'yxatdan o\'tishda xatolik yuz berdi';
+    errors.general = t('auth.registerError');
   } finally {
     loading.value = false;
   }

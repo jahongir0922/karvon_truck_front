@@ -3,7 +3,7 @@
     <!-- Filter drawer -->
     <q-drawer v-model="drawerOpen" overlay :width="320" class="p-3" side="right" bordered>
       <div class="flex justify-between items-center mb-3">
-        <span class="font-bold text-lg">Filtr</span>
+        <span class="font-bold text-lg">{{ t('index.filterTitle') }}</span>
         <q-btn flat dense icon="close" @click="drawerOpen = false" />
       </div>
       <div class="flex flex-col gap-3">
@@ -15,7 +15,7 @@
           use-input
           clearable
           input-debounce="400"
-          label="Mamlakat"
+          :label="t('ad.country')"
           :options="countryOptions"
           option-label="label"
           option-value="value"
@@ -32,7 +32,7 @@
             </q-item>
           </template>
           <template #no-option>
-            <q-item><q-item-section class="text-grey">Qidirish uchun matn kiriting</q-item-section></q-item>
+            <q-item><q-item-section class="text-grey">{{ t('common.noOption') }}</q-item-section></q-item>
           </template>
         </q-select>
 
@@ -42,7 +42,7 @@
           use-input
           clearable
           input-debounce="400"
-          label="Qayerdan"
+          :label="t('ad.from')"
           :options="fromOptions"
           option-label="label"
           option-value="value"
@@ -58,7 +58,7 @@
             </q-item>
           </template>
           <template #no-option>
-            <q-item><q-item-section class="text-grey">Qidirish uchun matn kiriting</q-item-section></q-item>
+            <q-item><q-item-section class="text-grey">{{ t('common.noOption') }}</q-item-section></q-item>
           </template>
         </q-select>
 
@@ -68,7 +68,7 @@
           use-input
           clearable
           input-debounce="400"
-          label="Qayerga"
+          :label="t('ad.to')"
           :options="toOptions"
           option-label="label"
           option-value="value"
@@ -84,7 +84,7 @@
             </q-item>
           </template>
           <template #no-option>
-            <q-item><q-item-section class="text-grey">Qidirish uchun matn kiriting</q-item-section></q-item>
+            <q-item><q-item-section class="text-grey">{{ t('common.noOption') }}</q-item-section></q-item>
           </template>
         </q-select>
 
@@ -94,35 +94,35 @@
           clearable
           multiple
           use-chips
-          label="Mashina turi"
+          :label="t('ad.truckType')"
           :options="TRUCK_TYPES"
           behavior="menu"
         />
         <div class="grid grid-cols-2 gap-2">
-          <q-input v-model.number="filters.priceFrom" label="Min narx" type="number" />
-          <q-input v-model.number="filters.priceTo" label="Max narx" type="number" />
+          <q-input v-model.number="filters.priceFrom" :label="t('index.minPrice')" type="number" />
+          <q-input v-model.number="filters.priceTo" :label="t('index.maxPrice')" type="number" />
         </div>
         <div class="grid grid-cols-2 gap-2">
-          <q-input v-model.number="filters.weightFrom" label="Min vazn (t)" type="number" />
-          <q-input v-model.number="filters.weightTo" label="Max vazn (t)" type="number" />
+          <q-input v-model.number="filters.weightFrom" :label="t('index.minWeight')" type="number" />
+          <q-input v-model.number="filters.weightTo" :label="t('index.maxWeight')" type="number" />
         </div>
-        <q-btn color="primary" label="Qo'llash" @click="drawerOpen = false" />
-        <q-btn flat label="Tozalash" @click="resetFilters" />
+        <q-btn color="primary" :label="t('common.apply')" @click="drawerOpen = false" />
+        <q-btn flat :label="t('common.clear')" @click="resetFilters" />
       </div>
     </q-drawer>
 
     <q-page class="p-3">
       <!-- Direction selection screen -->
       <div v-if="!directionChosen" class="flex flex-col h-[85vh] justify-center items-center gap-4">
-        <div class="text-xl font-bold text-center">Yuk qidirish uchun yo'nalish tanlang</div>
+        <div class="text-xl font-bold text-center">{{ t('index.chooseDirection') }}</div>
         <div class="flex gap-4">
-          <q-radio v-model="direction" val="international" label="Xalqaro" />
-          <q-radio v-model="direction" val="intercity" label="Shaharlararo" />
+          <q-radio v-model="direction" val="international" :label="t('ad.international')" />
+          <q-radio v-model="direction" val="intercity" :label="t('ad.intercity')" />
         </div>
         <q-btn
           :disabled="!direction"
           color="primary"
-          label="Davom etish"
+          :label="t('index.continue')"
           class="min-w-[150px]"
           @click="confirmDirection"
         />
@@ -132,8 +132,8 @@
       <template v-else>
         <div class="flex gap-2 mb-4 items-center flex-wrap">
           <div class="flex gap-4">
-            <q-radio v-model="direction" val="international" label="Xalqaro" @update:model-value="onDirectionChange" />
-            <q-radio v-model="direction" val="intercity" label="Shaharlararo" @update:model-value="onDirectionChange" />
+            <q-radio v-model="direction" val="international" :label="t('ad.international')" @update:model-value="onDirectionChange" />
+            <q-radio v-model="direction" val="intercity" :label="t('ad.intercity')" @update:model-value="onDirectionChange" />
           </div>
           <q-space />
           <q-btn flat dense icon="filter_list" @click="drawerOpen = true">
@@ -142,13 +142,13 @@
         </div>
 
         <div v-if="!allAds.length && !loading" class="text-center text-grey-6 py-10">
-          Hozircha e'lonlar yo'q
+          {{ t('index.noAds') }}
         </div>
 
         <ads-card :ads="filteredAds" />
 
         <div v-if="filteredAds.length === 0 && allAds.length > 0" class="text-center text-grey-6 py-10">
-          Filtrga mos e'lon topilmadi
+          {{ t('index.noFilteredAds') }}
         </div>
       </template>
     </q-page>
@@ -157,10 +157,13 @@
 
 <script setup lang="ts">
 import { ref, computed, reactive, onMounted } from 'vue';
+import { useI18n } from 'vue-i18n';
 import AdsCard from 'components/AdsCard.vue';
 import { apiGetAds, apiGetCountries } from 'src/api';
 import { useLocationSearch } from 'src/composables/useLocationSearch';
 import type { Advertisement, Country } from 'src/types';
+
+const { t } = useI18n();
 
 const TRUCK_TYPES = ['Tent', 'Ref', 'Plashchaniy', 'Konteyner', 'Bortovoy', 'Samosvал'];
 

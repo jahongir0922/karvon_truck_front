@@ -1,11 +1,11 @@
 <template>
   <q-form ref="formRef" class="flex flex-col p-3 gap-3 max-w-[800px] mx-auto" @submit.prevent="submitAd">
-    <div class="text-lg font-bold">Yangi yuk e'loni</div>
+    <div class="text-lg font-bold">{{ t('ad.newAd') }}</div>
 
     <!-- Yo'nalish -->
     <div class="flex gap-4">
-      <q-radio v-model="form.direction" val="international" label="Xalqaro" @update:model-value="onDirectionChange" />
-      <q-radio v-model="form.direction" val="intercity" label="Shaharlararo" @update:model-value="onDirectionChange" />
+      <q-radio v-model="form.direction" val="international" :label="t('ad.international')" @update:model-value="onDirectionChange" />
+      <q-radio v-model="form.direction" val="intercity" :label="t('ad.intercity')" @update:model-value="onDirectionChange" />
     </div>
 
     <!-- Mamlakat (faqat shaharlararo) -->
@@ -16,7 +16,7 @@
       use-input
       clearable
       input-debounce="400"
-      label="Mamlakat"
+      :label="t('ad.country')"
       :options="countryOptions"
       option-label="label"
       option-value="value"
@@ -33,7 +33,7 @@
         </q-item>
       </template>
       <template #no-option>
-        <q-item><q-item-section class="text-grey">Qidirish uchun matn kiriting</q-item-section></q-item>
+        <q-item><q-item-section class="text-grey">{{ t('common.noOption') }}</q-item-section></q-item>
       </template>
     </q-select>
 
@@ -45,7 +45,7 @@
         use-input
         clearable
         input-debounce="400"
-        label="Qayerdan *"
+        :label="t('ad.fromRequired')"
         :options="fromOptions"
         option-label="label"
         option-value="value"
@@ -55,8 +55,8 @@
         @virtual-scroll="(e) => onFromScroll(e.to)"
         behavior="menu"
         :rules="[
-          (v) => !!v || 'Majburiy maydon',
-          (v) => !v || v.length >= 2 || 'Kamida 2 ta belgi',
+          (v) => !!v || t('common.required'),
+          (v) => !v || v.length >= 2 || t('common.minChars', { n: 2 }),
         ]"
         lazy-rules
       >
@@ -66,7 +66,7 @@
           </q-item>
         </template>
         <template #no-option>
-          <q-item><q-item-section class="text-grey">Qidirish uchun matn kiriting</q-item-section></q-item>
+          <q-item><q-item-section class="text-grey">{{ t('common.noOption') }}</q-item-section></q-item>
         </template>
       </q-select>
 
@@ -77,7 +77,7 @@
         use-input
         clearable
         input-debounce="400"
-        label="Qayerga *"
+        :label="t('ad.toRequired')"
         :options="toOptions"
         option-label="label"
         option-value="value"
@@ -87,8 +87,8 @@
         @virtual-scroll="(e) => onToScroll(e.to)"
         behavior="menu"
         :rules="[
-          (v) => !!v || 'Majburiy maydon',
-          (v) => !v || v.length >= 2 || 'Kamida 2 ta belgi',
+          (v) => !!v || t('common.required'),
+          (v) => !v || v.length >= 2 || t('common.minChars', { n: 2 }),
         ]"
         lazy-rules
       >
@@ -98,7 +98,7 @@
           </q-item>
         </template>
         <template #no-option>
-          <q-item><q-item-section class="text-grey">Qidirish uchun matn kiriting</q-item-section></q-item>
+          <q-item><q-item-section class="text-grey">{{ t('common.noOption') }}</q-item-section></q-item>
         </template>
       </q-select>
 
@@ -109,7 +109,7 @@
         clearable
         multiple
         use-chips
-        label="Mashina turi"
+        :label="t('ad.truckType')"
         :options="TRUCK_TYPES"
         behavior="menu"
       >
@@ -127,10 +127,10 @@
       <q-input
         filled
         v-model="form.loadName"
-        label="Yuk nomi"
+        :label="t('ad.cargoName')"
         :rules="[
-          (v) => !v || v.length >= 2 || 'Kamida 2 ta belgi',
-          (v) => !v || v.length <= 50 || 'Ko\'pi bilan 50 ta belgi',
+          (v) => !v || v.length >= 2 || t('common.minChars', { n: 2 }),
+          (v) => !v || v.length <= 50 || t('common.maxChars', { n: 50 }),
         ]"
         lazy-rules
       />
@@ -139,11 +139,11 @@
       <q-input
         filled
         v-model="form.descriptions"
-        label="Yuk tavsifi"
+        :label="t('ad.cargoDesc')"
         type="textarea"
         rows="2"
         class="sm:col-span-2"
-        :rules="[(v) => !v || v.length <= 500 || 'Ko\'pi bilan 500 ta belgi']"
+        :rules="[(v) => !v || v.length <= 500 || t('common.maxChars', { n: 500 })]"
         lazy-rules
       />
 
@@ -151,7 +151,7 @@
       <q-select
         filled
         v-model="form.paymentType"
-        label="To'lov turi"
+        :label="t('ad.paymentType')"
         clearable
         :options="PAYMENT_TYPES"
         behavior="menu"
@@ -163,9 +163,9 @@
           class="flex-1"
           filled
           v-model="form.advance"
-          label="Avans"
+          :label="t('ad.advance')"
           :rules="[
-            (v) => !v || /^\d{1,16}(\.\d{1,4})?$/.test(v) || 'Faqat raqam (masalan: 500 yoki 500.50)',
+            (v) => !v || /^\d{1,16}(\.\d{1,4})?$/.test(v) || t('common.onlyNumber'),
           ]"
           lazy-rules
         />
@@ -173,9 +173,9 @@
           class="flex-1"
           filled
           v-model="form.deliveryCost"
-          label="Narxi"
+          :label="t('ad.price')"
           :rules="[
-            (v) => !v || /^\d{1,16}(\.\d{1,4})?$/.test(v) || 'Faqat raqam (masalan: 1000 yoki 1000.50)',
+            (v) => !v || /^\d{1,16}(\.\d{1,4})?$/.test(v) || t('common.onlyNumber'),
           ]"
           lazy-rules
         />
@@ -192,38 +192,38 @@
       <q-input
         filled
         v-model.number="form.volume"
-        label="Yuk hajmi (m³)"
+        :label="t('ad.volume')"
         type="number"
         :rules="[
-          (v) => v === null || v === '' || v >= 2 || 'Kamida 2 m³',
-          (v) => v === null || v === '' || v <= 10000 || 'Ko\'pi bilan 10 000 m³',
+          (v) => v === null || v === '' || v >= 2 || t('ad.minVolume'),
+          (v) => v === null || v === '' || v <= 10000 || t('ad.maxVolume'),
         ]"
         lazy-rules
       />
       <q-input
         filled
         v-model.number="form.weight"
-        label="Yuk vazni (tonna)"
+        :label="t('ad.weight')"
         type="number"
         :rules="[
-          (v) => v === null || v === '' || v >= 2 || 'Kamida 2 tonna',
-          (v) => v === null || v === '' || v <= 50 || 'Ko\'pi bilan 50 tonna',
+          (v) => v === null || v === '' || v >= 2 || t('ad.minWeight'),
+          (v) => v === null || v === '' || v <= 50 || t('ad.maxWeight'),
         ]"
         lazy-rules
       />
 
       <!-- Yuklash vaqti -->
-      <q-input filled v-model="form.loadingTime" label="Yuklash vaqti" type="date" />
+      <q-input filled v-model="form.loadingTime" :label="t('ad.loadingTime')" type="date" />
 
       <!-- Telefon -->
       <q-input
         filled
         v-model="form.phone"
-        label="Telefon *"
+        :label="t('ad.phoneRequired')"
         :rules="[
-          (v) => !!v || 'Majburiy maydon',
-          (v) => !v || v.length >= 5 || 'Kamida 5 ta belgi',
-          (v) => !v || v.length <= 20 || 'Ko\'pi bilan 20 ta belgi',
+          (v) => !!v || t('common.required'),
+          (v) => !v || v.length >= 5 || t('ad.minPhone'),
+          (v) => !v || v.length <= 20 || t('ad.maxPhone'),
         ]"
         lazy-rules
       />
@@ -232,10 +232,10 @@
       <q-input
         filled
         v-model="form.clientName"
-        label="Murojaat uchun (ism)"
+        :label="t('ad.contactName')"
         :rules="[
-          (v) => !v || v.length >= 2 || 'Kamida 2 ta belgi',
-          (v) => !v || v.length <= 50 || 'Ko\'pi bilan 50 ta belgi',
+          (v) => !v || v.length >= 2 || t('common.minChars', { n: 2 }),
+          (v) => !v || v.length <= 50 || t('common.maxChars', { n: 50 }),
         ]"
         lazy-rules
       />
@@ -244,8 +244,8 @@
     <div v-if="errorMsg" class="text-negative text-sm">{{ errorMsg }}</div>
 
     <div class="flex justify-end gap-2">
-      <q-btn flat label="Tozalash" @click="resetForm" />
-      <q-btn color="primary" label="E'lon qo'shish" :loading="loading" type="submit" />
+      <q-btn flat :label="t('ad.reset')" @click="resetForm" />
+      <q-btn color="primary" :label="t('ad.addBtn')" :loading="loading" type="submit" />
     </div>
   </q-form>
 </template>
@@ -253,11 +253,13 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue';
 import { useQuasar, QForm } from 'quasar';
+import { useI18n } from 'vue-i18n';
 import { apiCreateAd, apiGetCountries } from 'src/api';
 import { useLocationSearch } from 'src/composables/useLocationSearch';
 import type { Country } from 'src/types';
 
 const $q = useQuasar();
+const { t } = useI18n();
 
 const TRUCK_TYPES = ['Tent', 'Ref', 'Plashchaniy', 'Konteyner', 'Bortovoy', 'Samosvал'];
 const PAYMENT_TYPES = ['Naqd', "Pul o'tkazish"];
@@ -390,13 +392,18 @@ function onDirectionChange() {
   }
 }
 
-onMounted(() => {
-  if (form.direction === 'intercity') {
-    void loadDefaultCountry().then(() => loadInitial());
-  } else {
-    void loadInitial();
-  }
-});
+function resetForm() {
+  Object.assign(form, {
+    direction: 'intercity', countryId: null,
+    fromAddress: '', toAddress: '', truckType: [],
+    loadName: '', descriptions: '', paymentType: '',
+    advance: '', deliveryCost: '', currency: 'UZS',
+    volume: null, weight: null, loadingTime: '', phone: '', clientName: '',
+  });
+  errorMsg.value = '';
+  clearOptions();
+  void loadDefaultCountry().then(() => loadInitial());
+}
 
 async function submitAd() {
   errorMsg.value = '';
@@ -422,39 +429,21 @@ async function submitAd() {
       phone: form.phone,
       ...(form.clientName && { clientName: form.clientName }),
     });
-    $q.notify({ type: 'positive', message: "E'lon muvaffaqiyatli qo'shildi!" });
+    $q.notify({ type: 'positive', message: t('common.saved') });
     resetForm();
   } catch (err: unknown) {
     const msg = (err as { response?: { data?: { message?: unknown } } })?.response?.data?.message;
-    if (Array.isArray(msg)) {
-      errorMsg.value = msg.join(', ');
-    } else if (typeof msg === 'string') {
-      errorMsg.value = msg;
-    } else {
-      errorMsg.value = "Xatolik yuz berdi. Iltimos, qayta urinib ko'ring.";
-    }
+    errorMsg.value = Array.isArray(msg) ? msg.join(', ') : typeof msg === 'string' ? msg : t('common.error');
   } finally {
     loading.value = false;
   }
 }
 
-function resetForm() {
-  form.direction = 'intercity';
-  form.countryId = null;
-  form.fromAddress = '';
-  form.toAddress = '';
-  form.truckType = [];
-  form.loadName = '';
-  form.descriptions = '';
-  form.paymentType = '';
-  form.advance = '';
-  form.deliveryCost = '';
-  form.currency = 'UZS';
-  form.volume = null;
-  form.weight = null;
-  form.loadingTime = '';
-  form.phone = '';
-  form.clientName = '';
-  clearOptions();
-}
+onMounted(() => {
+  if (form.direction === 'intercity') {
+    void loadDefaultCountry().then(() => loadInitial());
+  } else {
+    void loadInitial();
+  }
+});
 </script>

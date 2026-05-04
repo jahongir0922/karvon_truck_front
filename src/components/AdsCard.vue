@@ -10,13 +10,13 @@
 
       <q-separator />
       <div class="flex items-center justify-between gap-2 py-1">
-        <span class="text-grey-7 text-sm">Mashina:</span>
+        <span class="text-grey-7 text-sm">{{ t('ad.truckLabel') }}</span>
         <span class="text-sm font-medium">{{ ad.truckType?.join(' / ') || '—' }}</span>
       </div>
 
       <q-separator />
       <div class="flex items-center justify-between gap-2 py-1">
-        <span class="text-grey-7 text-sm">Yuk:</span>
+        <span class="text-grey-7 text-sm">{{ t('ad.cargoLabel') }}</span>
         <span class="text-sm">
           {{ [ad.loadName, ad.weight ? ad.weight + ' t' : '', ad.volume ? ad.volume + ' m³' : ''].filter(Boolean).join(', ') || '—' }}
         </span>
@@ -25,26 +25,26 @@
       <template v-if="ad.descriptions">
         <q-separator />
         <div class="flex items-start justify-between gap-2 py-1">
-          <span class="text-grey-7 text-sm">Qo'shimcha:</span>
+          <span class="text-grey-7 text-sm">{{ t('ad.extraLabel') }}</span>
           <p class="text-sm text-right">{{ ad.descriptions }}</p>
         </div>
       </template>
 
       <q-separator />
       <div class="flex items-center justify-between gap-2 py-1">
-        <span class="text-grey-7 text-sm">To'lov:</span>
+        <span class="text-grey-7 text-sm">{{ t('ad.paymentLabel') }}</span>
         <span class="text-sm">{{ ad.paymentType || '—' }}</span>
       </div>
 
       <q-separator />
       <div class="flex items-center justify-between gap-2 py-1">
-        <span class="text-grey-7 text-sm">Avans:</span>
+        <span class="text-grey-7 text-sm">{{ t('ad.advanceLabel') }}</span>
         <span class="text-sm">{{ ad.advance ? ad.advance + ' ' + (ad.currency || '') : '—' }}</span>
       </div>
 
       <q-separator />
       <div class="flex items-center justify-between gap-2 py-1">
-        <span class="text-grey-7 text-sm">Yo'l haqi:</span>
+        <span class="text-grey-7 text-sm">{{ t('ad.deliveryCostLabel') }}</span>
         <span class="text-sm">{{ ad.deliveryCost ? ad.deliveryCost + ' ' + (ad.currency || '') : '—' }}</span>
       </div>
 
@@ -61,6 +61,8 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n';
 import type { Advertisement } from 'src/types';
 defineProps<{ ads: Advertisement[] }>();
+const { t } = useI18n();
 </script>

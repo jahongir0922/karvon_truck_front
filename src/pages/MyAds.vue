@@ -1,13 +1,13 @@
 <template>
   <q-page class="p-3 max-w-[900px] mx-auto">
-    <div class="text-lg font-bold mb-4">Mening e'lonlarim</div>
+    <div class="text-lg font-bold mb-4">{{ t('myAds.title') }}</div>
 
     <div v-if="loading" class="text-center py-10">
       <q-spinner size="40px" color="primary" />
     </div>
 
     <div v-else-if="!ads.length" class="text-center text-grey-6 py-10">
-      Hozircha e'lonlar yo'q
+      {{ t('myAds.noAds') }}
     </div>
 
     <div v-else class="flex flex-col gap-3">
@@ -28,7 +28,7 @@
           </div>
           <div class="flex items-center gap-2 shrink-0">
             <q-badge :color="ad.isActive ? 'positive' : 'grey'">
-              {{ ad.isActive ? 'Faol' : 'Nofaol' }}
+              {{ ad.isActive ? t('myAds.active') : t('myAds.inactive') }}
             </q-badge>
             <q-btn flat round dense icon="edit" color="primary" @click="openEdit(ad)" />
             <q-btn
@@ -47,7 +47,7 @@
     <q-dialog v-model="editDialog" maximized>
       <q-card class="flex flex-col">
         <q-bar class="bg-primary text-white">
-          <span class="font-bold">E'lonni tahrirlash</span>
+          <span class="font-bold">{{ t('myAds.editTitle') }}</span>
           <q-space />
           <q-btn flat dense icon="close" v-close-popup />
         </q-bar>
@@ -56,9 +56,9 @@
           <q-form ref="editFormRef" class="flex flex-col p-4 gap-3 max-w-[800px] mx-auto" @submit.prevent="saveEdit">
 
             <div class="flex gap-4">
-              <q-radio v-model="editForm.direction" val="international" label="Xalqaro"
+              <q-radio v-model="editForm.direction" val="international" :label="t('ad.international')"
                 @update:model-value="onEditDirectionChange" />
-              <q-radio v-model="editForm.direction" val="intercity" label="Shaharlararo"
+              <q-radio v-model="editForm.direction" val="intercity" :label="t('ad.intercity')"
                 @update:model-value="onEditDirectionChange" />
             </div>
 
@@ -70,7 +70,7 @@
               use-input
               clearable
               input-debounce="400"
-              label="Mamlakat"
+              :label="t('ad.country')"
               :options="countryOptions"
               option-label="label"
               option-value="value"
@@ -86,7 +86,7 @@
                 </q-item>
               </template>
               <template #no-option>
-                <q-item><q-item-section class="text-grey">Qidirish uchun matn kiriting</q-item-section></q-item>
+                <q-item><q-item-section class="text-grey">{{ t('common.noOption') }}</q-item-section></q-item>
               </template>
             </q-select>
 
@@ -97,7 +97,7 @@
                 use-input
                 clearable
                 input-debounce="400"
-                label="Qayerdan *"
+                :label="t('ad.fromRequired')"
                 :options="fromOptions"
                 option-label="label"
                 option-value="value"
@@ -106,7 +106,7 @@
                 @filter="filterFrom"
                 @virtual-scroll="(e) => onFromScroll(e.to)"
                 behavior="menu"
-                :rules="[(v) => !!v || 'Majburiy maydon']"
+                :rules="[(v) => !!v || t('common.required')]"
                 lazy-rules
               >
                 <template #option="{ itemProps, opt }">
@@ -115,7 +115,7 @@
                   </q-item>
                 </template>
                 <template #no-option>
-                  <q-item><q-item-section class="text-grey">Qidirish uchun matn kiriting</q-item-section></q-item>
+                  <q-item><q-item-section class="text-grey">{{ t('common.noOption') }}</q-item-section></q-item>
                 </template>
               </q-select>
 
@@ -125,7 +125,7 @@
                 use-input
                 clearable
                 input-debounce="400"
-                label="Qayerga *"
+                :label="t('ad.toRequired')"
                 :options="toOptions"
                 option-label="label"
                 option-value="value"
@@ -134,7 +134,7 @@
                 @filter="filterTo"
                 @virtual-scroll="(e) => onToScroll(e.to)"
                 behavior="menu"
-                :rules="[(v) => !!v || 'Majburiy maydon']"
+                :rules="[(v) => !!v || t('common.required')]"
                 lazy-rules
               >
                 <template #option="{ itemProps, opt }">
@@ -143,12 +143,12 @@
                   </q-item>
                 </template>
                 <template #no-option>
-                  <q-item><q-item-section class="text-grey">Qidirish uchun matn kiriting</q-item-section></q-item>
+                  <q-item><q-item-section class="text-grey">{{ t('common.noOption') }}</q-item-section></q-item>
                 </template>
               </q-select>
 
               <q-select filled v-model="editForm.truckType" multiple use-chips clearable
-                label="Mashina turi" :options="TRUCK_TYPES" behavior="menu">
+                :label="t('ad.truckType')" :options="TRUCK_TYPES" behavior="menu">
                 <template #option="{ itemProps, opt, selected, toggleOption }">
                   <q-item v-bind="itemProps">
                     <q-item-section>{{ opt }}</q-item-section>
@@ -159,45 +159,45 @@
                 </template>
               </q-select>
 
-              <q-input filled v-model="editForm.loadName" label="Yuk nomi"
-                :rules="[(v) => !v || v.length >= 2 || 'Kamida 2 ta belgi']" lazy-rules />
+              <q-input filled v-model="editForm.loadName" :label="t('ad.cargoName')"
+                :rules="[(v) => !v || v.length >= 2 || t('common.minChars', { n: 2 })]" lazy-rules />
 
-              <q-input filled v-model="editForm.descriptions" label="Yuk tavsifi"
+              <q-input filled v-model="editForm.descriptions" :label="t('ad.cargoDesc')"
                 type="textarea" rows="2" class="sm:col-span-2"
-                :rules="[(v) => !v || v.length <= 500 || 'Ko\'pi bilan 500 ta belgi']" lazy-rules />
+                :rules="[(v) => !v || v.length <= 500 || t('common.maxChars', { n: 500 })]" lazy-rules />
 
-              <q-select filled v-model="editForm.paymentType" label="To'lov turi"
+              <q-select filled v-model="editForm.paymentType" :label="t('ad.paymentType')"
                 clearable :options="PAYMENT_TYPES" behavior="menu" />
 
               <div class="flex gap-2 items-start">
-                <q-input class="flex-1" filled v-model="editForm.advance" label="Avans"
-                  :rules="[(v) => !v || /^\d{1,16}(\.\d{1,4})?$/.test(v) || 'Faqat raqam']" lazy-rules />
-                <q-input class="flex-1" filled v-model="editForm.deliveryCost" label="Narxi"
-                  :rules="[(v) => !v || /^\d{1,16}(\.\d{1,4})?$/.test(v) || 'Faqat raqam']" lazy-rules />
+                <q-input class="flex-1" filled v-model="editForm.advance" :label="t('ad.advance')"
+                  :rules="[(v) => !v || /^\d{1,16}(\.\d{1,4})?$/.test(v) || t('common.onlyNumber')]" lazy-rules />
+                <q-input class="flex-1" filled v-model="editForm.deliveryCost" :label="t('ad.price')"
+                  :rules="[(v) => !v || /^\d{1,16}(\.\d{1,4})?$/.test(v) || t('common.onlyNumber')]" lazy-rules />
                 <q-select filled v-model="editForm.currency" :options="CURRENCIES"
                   behavior="menu" style="min-width: 80px" />
               </div>
 
-              <q-input filled v-model.number="editForm.volume" label="Yuk hajmi (m³)" type="number"
-                :rules="[(v) => v === null || v === '' || v >= 2 || 'Kamida 2 m³']" lazy-rules />
-              <q-input filled v-model.number="editForm.weight" label="Yuk vazni (tonna)" type="number"
-                :rules="[(v) => v === null || v === '' || v >= 2 || 'Kamida 2 tonna']" lazy-rules />
+              <q-input filled v-model.number="editForm.volume" :label="t('ad.volume')" type="number"
+                :rules="[(v) => v === null || v === '' || v >= 2 || t('ad.minVolume')]" lazy-rules />
+              <q-input filled v-model.number="editForm.weight" :label="t('ad.weight')" type="number"
+                :rules="[(v) => v === null || v === '' || v >= 2 || t('ad.minWeight')]" lazy-rules />
 
-              <q-input filled v-model="editForm.loadingTime" label="Yuklash vaqti" type="date" />
+              <q-input filled v-model="editForm.loadingTime" :label="t('ad.loadingTime')" type="date" />
 
-              <q-input filled v-model="editForm.phone" label="Telefon *"
-                :rules="[(v) => !!v || 'Majburiy maydon', (v) => !v || v.length >= 5 || 'Kamida 5 ta belgi']"
+              <q-input filled v-model="editForm.phone" :label="t('ad.phoneRequired')"
+                :rules="[(v) => !!v || t('common.required'), (v) => !v || v.length >= 5 || t('ad.minPhone')]"
                 lazy-rules />
 
-              <q-input filled v-model="editForm.clientName" label="Murojaat uchun (ism)"
-                :rules="[(v) => !v || v.length >= 2 || 'Kamida 2 ta belgi']" lazy-rules />
+              <q-input filled v-model="editForm.clientName" :label="t('ad.contactName')"
+                :rules="[(v) => !v || v.length >= 2 || t('common.minChars', { n: 2 })]" lazy-rules />
             </section>
 
             <div v-if="editError" class="text-negative text-sm">{{ editError }}</div>
 
             <div class="flex justify-end gap-2">
-              <q-btn flat label="Bekor" v-close-popup />
-              <q-btn color="primary" label="Saqlash" :loading="saving" type="submit" />
+              <q-btn flat :label="t('common.cancel')" v-close-popup />
+              <q-btn color="primary" :label="t('common.save')" :loading="saving" type="submit" />
             </div>
           </q-form>
         </q-scroll-area>
@@ -209,11 +209,13 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue';
 import { useQuasar, QForm } from 'quasar';
+import { useI18n } from 'vue-i18n';
 import { apiGetMyAds, apiUpdateAd, apiGetCountries } from 'src/api';
 import { useLocationSearch } from 'src/composables/useLocationSearch';
 import type { Advertisement, Country } from 'src/types';
 
 const $q = useQuasar();
+const { t } = useI18n();
 
 const TRUCK_TYPES = ['Tent', 'Ref', 'Plashchaniy', 'Konteyner', 'Bortovoy', 'Samosvал'];
 const PAYMENT_TYPES = ['Naqd', "Pul o'tkazish"];
@@ -391,10 +393,10 @@ async function saveEdit() {
     const idx = ads.value.findIndex((a) => a._id === editingId);
     if (idx >= 0) ads.value[idx] = res.data.data;
     editDialog.value = false;
-    $q.notify({ type: 'positive', message: "E'lon yangilandi!" });
+    $q.notify({ type: 'positive', message: t('myAds.updated') });
   } catch (err: unknown) {
     const msg = (err as { response?: { data?: { message?: unknown } } })?.response?.data?.message;
-    editError.value = Array.isArray(msg) ? msg.join(', ') : typeof msg === 'string' ? msg : "Xatolik yuz berdi.";
+    editError.value = Array.isArray(msg) ? msg.join(', ') : typeof msg === 'string' ? msg : t('common.error');
   } finally {
     saving.value = false;
   }
