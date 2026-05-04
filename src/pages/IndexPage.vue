@@ -161,9 +161,10 @@ import { useI18n } from 'vue-i18n';
 import AdsCard from 'components/AdsCard.vue';
 import { apiGetAds, apiGetCountries } from 'src/api';
 import { useLocationSearch } from 'src/composables/useLocationSearch';
+import { countryLabel } from 'src/composables/useAdminCountrySelect';
 import type { Advertisement, Country } from 'src/types';
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
 
 const TRUCK_TYPES = ['Tent', 'Ref', 'Plashchaniy', 'Konteyner', 'Bortovoy', 'Samosvал'];
 
@@ -183,8 +184,7 @@ const countryHasMore = ref(false);
 let currentCountryQuery = 'a';
 
 function toCountryOption(c: Country): CountryOption {
-  const label = c.translations?.['uz'] ?? c.translations?.['ru'] ?? c.name;
-  return { label, value: c.id };
+  return { label: countryLabel(c, locale.value), value: c.id };
 }
 
 async function loadDefaultCountry() {

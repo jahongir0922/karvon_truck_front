@@ -256,10 +256,11 @@ import { useQuasar, QForm } from 'quasar';
 import { useI18n } from 'vue-i18n';
 import { apiCreateAd, apiGetCountries } from 'src/api';
 import { useLocationSearch } from 'src/composables/useLocationSearch';
+import { countryLabel } from 'src/composables/useAdminCountrySelect';
 import type { Country } from 'src/types';
 
 const $q = useQuasar();
-const { t } = useI18n();
+const { t, locale } = useI18n();
 
 const TRUCK_TYPES = ['Tent', 'Ref', 'Plashchaniy', 'Konteyner', 'Bortovoy', 'Samosvал'];
 const PAYMENT_TYPES = ['Naqd', "Pul o'tkazish"];
@@ -319,8 +320,7 @@ const countryHasMore = ref(false);
 let currentCountryQuery = 'a';
 
 function toCountryOption(c: Country): CountryOption {
-  const label = c.translations?.['uz'] ?? c.translations?.['ru'] ?? c.name;
-  return { label, value: c.id };
+  return { label: countryLabel(c, locale.value), value: c.id };
 }
 
 async function loadDefaultCountry() {
