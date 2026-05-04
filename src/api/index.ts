@@ -28,7 +28,7 @@ export const apiUpdateAd = (id: string, data: Record<string, unknown>) =>
   axios.put<Wrapped<Advertisement>>(`advertisements/${id}`, data);
 
 // ─── Countries ───────────────────────────────────────────────────────────────
-export const apiGetCountries = (params?: { region?: string; subregion?: string; q?: string }) =>
+export const apiGetCountries = (params?: { region?: string; subregion?: string; q?: string; limit?: number; offset?: number }) =>
   axios.get<Wrapped<Country[]>>('countries', {
     params,
     headers: { 'X-Skip-Loading': '1' },
@@ -64,9 +64,10 @@ export const apiSearchLocations = (
   q: string,
   direction: 'international' | 'intercity',
   countryId?: number,
-  limit = 20,
+  limit = 30,
+  offset = 0,
 ) =>
   axios.get<Wrapped<LocationResult[]>>('locations', {
-    params: { q, direction, country_id: countryId, limit },
+    params: { q, direction, country_id: countryId, limit, offset },
     headers: { 'X-Skip-Loading': '1' },
   });

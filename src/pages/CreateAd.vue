@@ -24,6 +24,7 @@
       map-options
       @filter="filterCountry"
       @update:model-value="onCountryChange"
+      @virtual-scroll="(e) => onCountryScroll(e.to)"
       behavior="menu"
     >
       <template #option="{ itemProps, opt }">
@@ -51,6 +52,7 @@
         emit-value
         map-options
         @filter="filterFrom"
+        @virtual-scroll="(e) => onFromScroll(e.to)"
         behavior="menu"
         :rules="[
           (v) => !!v || 'Majburiy maydon',
@@ -82,6 +84,7 @@
         emit-value
         map-options
         @filter="filterTo"
+        @virtual-scroll="(e) => onToScroll(e.to)"
         behavior="menu"
         :rules="[
           (v) => !!v || 'Majburiy maydon',
@@ -308,7 +311,10 @@ const form = reactive<AdForm>({
 });
 
 // ─── Country selector ──────────────────────────────────────────────────────────
+const COUNTRY_LIMIT = 30;
 const countryOptions = ref<CountryOption[]>([]);
+const countryHasMore = ref(false);
+let currentCountryQuery = 'a';
 
 function toCountryOption(c: Country): CountryOption {
   const label = c.translations?.['uz'] ?? c.translations?.['ru'] ?? c.name;
@@ -316,9 +322,10 @@ function toCountryOption(c: Country): CountryOption {
 }
 
 async function loadDefaultCountry() {
-  const res = await apiGetCountries({ q: 'uzbek' });
+  const res = await apiGetCountries({ q: 'uzbek', limit: COUNTRY_LIMIT });
   const countries = res.data.data;
   countryOptions.value = countries.map(toCountryOption);
+  countryHasMore.value = countries.length === COUNTRY_LIMIT;
   if (countries.length && form.countryId === null) {
     const uz = countries.find((c) => c.iso2 === 'UZ') ?? countries[0];
     if (uz) form.countryId = uz.id;
@@ -326,18 +333,45 @@ async function loadDefaultCountry() {
 }
 
 function filterCountry(val: string, update: (fn: () => void) => void) {
-  void apiGetCountries({ q: val || 'a' }).then((res) => {
+  currentCountryQuery = val || 'a';
+  void apiGetCountries({ q: currentCountryQuery, limit: COUNTRY_LIMIT }).then((res) => {
     update(() => {
       countryOptions.value = res.data.data.map(toCountryOption);
+      countryHasMore.value = res.data.data.length === COUNTRY_LIMIT;
     });
   });
 }
 
+async function loadMoreCountry() {
+  if (!countryHasMore.value) return;
+  const res = await apiGetCountries({ q: currentCountryQuery, limit: COUNTRY_LIMIT, offset: countryOptions.value.length });
+  const more = res.data.data.map(toCountryOption);
+  countryOptions.value = [...countryOptions.value, ...more];
+  countryHasMore.value = more.length === COUNTRY_LIMIT;
+}
+
+function onCountryScroll(to: number) {
+  if (to >= countryOptions.value.length - 3 && countryHasMore.value) void loadMoreCountry();
+}
+
 // ─── Location search ───────────────────────────────────────────────────────────
-const { fromOptions, toOptions, loadInitial, filterFrom, filterTo, clearOptions } = useLocationSearch(
+const {
+  fromOptions, toOptions,
+  fromHasMore, toHasMore,
+  loadInitial, filterFrom, filterTo,
+  loadMoreFrom, loadMoreTo,
+  clearOptions,
+} = useLocationSearch(
   () => form.direction,
   () => (form.direction === 'intercity' && form.countryId ? form.countryId : undefined),
 );
+
+function onFromScroll(to: number) {
+  if (to >= fromOptions.value.length - 3 && fromHasMore.value) void loadMoreFrom();
+}
+function onToScroll(to: number) {
+  if (to >= toOptions.value.length - 3 && toHasMore.value) void loadMoreTo();
+}
 
 function onCountryChange() {
   form.fromAddress = '';
