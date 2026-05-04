@@ -23,6 +23,7 @@
       emit-value
       map-options
       @filter="filterCountry"
+      @update:model-value="onCountryChange"
       behavior="menu"
     >
       <template #option="{ itemProps, opt }">
@@ -337,6 +338,12 @@ const { fromOptions, toOptions, loadInitial, filterFrom, filterTo, clearOptions 
   () => form.direction,
   () => (form.direction === 'intercity' && form.countryId ? form.countryId : undefined),
 );
+
+function onCountryChange() {
+  form.fromAddress = '';
+  form.toAddress = '';
+  void loadInitial();
+}
 
 function onDirectionChange() {
   form.fromAddress = '';
