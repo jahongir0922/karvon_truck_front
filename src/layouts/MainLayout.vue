@@ -26,6 +26,7 @@
         <q-route-tab to="/" exact replace label="Yuklar" />
         <q-route-tab to="/create-ads" exact replace label="Yuk qo'shish" />
         <q-route-tab to="/my-ads" exact replace label="Mening yuklarim" />
+        <q-route-tab v-if="auth.isAdmin" to="/admin" exact replace label="Admin" />
       </q-tabs>
     </q-footer>
   </q-layout>

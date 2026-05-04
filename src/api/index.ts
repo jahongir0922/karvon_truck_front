@@ -49,11 +49,41 @@ export const apiGetProvincesByCountry = (countryId: number) =>
   });
 
 // ─── Cities ──────────────────────────────────────────────────────────────────
-export const apiGetCities = (params: { name?: string; country_id?: number; province_id?: number }) =>
+export const apiGetCities = (params: { name?: string; country_id?: number; state_id?: number }) =>
   axios.get<Wrapped<City[]>>('cities', {
     params,
     headers: { 'X-Skip-Loading': '1' },
   });
+
+// ─── Admin: Countries ────────────────────────────────────────────────────────
+export const apiAdminCreateCountry = (data: Record<string, unknown>) =>
+  axios.post<Wrapped<Country>>('countries', data);
+
+export const apiAdminUpdateCountry = (id: number, data: Record<string, unknown>) =>
+  axios.put<Wrapped<Country>>(`countries/${id}`, data);
+
+export const apiAdminDeleteCountry = (id: number) =>
+  axios.delete(`countries/${id}`);
+
+// ─── Admin: Provinces ─────────────────────────────────────────────────────────
+export const apiAdminCreateProvince = (data: Record<string, unknown>) =>
+  axios.post<Wrapped<Province>>('province', data);
+
+export const apiAdminUpdateProvince = (id: string, data: Record<string, unknown>) =>
+  axios.put<Wrapped<Province>>(`province/${id}`, data);
+
+export const apiAdminDeleteProvince = (id: string) =>
+  axios.delete(`province/${id}`);
+
+// ─── Admin: Cities ────────────────────────────────────────────────────────────
+export const apiAdminCreateCity = (data: Record<string, unknown>) =>
+  axios.post<Wrapped<City>>('cities', data);
+
+export const apiAdminUpdateCity = (id: string, data: Record<string, unknown>) =>
+  axios.put<Wrapped<City>>(`cities/${id}`, data);
+
+export const apiAdminDeleteCity = (id: string) =>
+  axios.delete(`cities/${id}`);
 
 // ─── Locations (unified search) ──────────────────────────────────────────────
 export interface LocationResult {

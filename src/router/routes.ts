@@ -12,6 +12,17 @@ const routes: RouteRecordRaw[] = [
         component: () => import('pages/MyAds.vue'),
         meta: { requiresAuth: true },
       },
+      {
+        path: 'admin',
+        component: () => import('pages/AdminPage.vue'),
+        meta: { requiresAuth: true },
+        redirect: '/admin/countries',
+        children: [
+          { path: 'countries', component: () => import('pages/admin/AdminCountries.vue') },
+          { path: 'provinces', component: () => import('pages/admin/AdminProvinces.vue') },
+          { path: 'cities', component: () => import('pages/admin/AdminCities.vue') },
+        ],
+      },
     ],
   },
   {

@@ -37,7 +37,7 @@ export interface City {
   name: string;
   state_code: string;
   state_name: string;
-  province_id: number;
+  state_id: number;
   country_id: number;
   country_code: string;
   country_name: string;
