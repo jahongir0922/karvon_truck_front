@@ -28,7 +28,7 @@ export const apiUpdateAd = (id: string, data: Record<string, unknown>) =>
   axios.put<Wrapped<Advertisement>>(`advertisements/${id}`, data);
 
 // ─── Countries ───────────────────────────────────────────────────────────────
-export const apiGetCountries = (params?: { region?: string; subregion?: string }) =>
+export const apiGetCountries = (params?: { region?: string; subregion?: string; q?: string }) =>
   axios.get<Wrapped<Country[]>>('countries', {
     params,
     headers: { 'X-Skip-Loading': '1' },

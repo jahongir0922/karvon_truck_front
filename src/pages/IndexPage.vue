@@ -7,6 +7,34 @@
         <q-btn flat dense icon="close" @click="drawerOpen = false" />
       </div>
       <div class="flex flex-col gap-3">
+        <!-- Mamlakat (faqat shaharlararo) -->
+        <q-select
+          v-if="direction === 'intercity'"
+          filled
+          v-model="countryId"
+          use-input
+          clearable
+          input-debounce="400"
+          label="Mamlakat"
+          :options="countryOptions"
+          option-label="label"
+          option-value="value"
+          emit-value
+          map-options
+          @filter="filterCountry"
+          @update:model-value="onCountryChange"
+          behavior="menu"
+        >
+          <template #option="{ itemProps, opt }">
+            <q-item v-bind="itemProps">
+              <q-item-section>{{ opt.label }}</q-item-section>
+            </q-item>
+          </template>
+          <template #no-option>
+            <q-item><q-item-section class="text-grey">Qidirish uchun matn kiriting</q-item-section></q-item>
+          </template>
+        </q-select>
+
         <q-select
           filled
           v-model="filters.fromAddress"
@@ -127,9 +155,9 @@
 <script setup lang="ts">
 import { ref, computed, reactive, onMounted } from 'vue';
 import AdsCard from 'components/AdsCard.vue';
-import { apiGetAds } from 'src/api';
+import { apiGetAds, apiGetCountries } from 'src/api';
 import { useLocationSearch } from 'src/composables/useLocationSearch';
-import type { Advertisement } from 'src/types';
+import type { Advertisement, Country } from 'src/types';
 
 const TRUCK_TYPES = ['Tent', 'Ref', 'Plashchaniy', 'Konteyner', 'Bortovoy', 'Samosvал'];
 
@@ -139,9 +167,43 @@ const direction = ref<'international' | 'intercity'>(
 );
 const directionChosen = ref(!!localStorage.getItem('direction'));
 
+// ─── Country selector ─────────────────────────────────────────────────────────
+interface CountryOption { label: string; value: number }
+
+const countryId = ref<number | null>(null);
+const countryOptions = ref<CountryOption[]>([]);
+
+function toCountryOption(c: Country): CountryOption {
+  const label = c.translations?.['uz'] ?? c.translations?.['ru'] ?? c.name;
+  return { label, value: c.id };
+}
+
+async function loadDefaultCountry() {
+  const res = await apiGetCountries({ q: 'uzbek' });
+  const countries = res.data.data;
+  countryOptions.value = countries.map(toCountryOption);
+  if (countries.length && countryId.value === null) {
+    const uz = countries.find((c) => c.iso2 === 'UZ') ?? countries[0];
+    if (uz) countryId.value = uz.id;
+  }
+}
+
+function filterCountry(val: string, update: (fn: () => void) => void) {
+  void apiGetCountries({ q: val || 'a' }).then((res) => {
+    update(() => { countryOptions.value = res.data.data.map(toCountryOption); });
+  });
+}
+
+function onCountryChange() {
+  filters.fromAddress = '';
+  filters.toAddress = '';
+  void loadInitial();
+}
+
 // ─── Location search ──────────────────────────────────────────────────────────
 const { fromOptions, toOptions, loadInitial, filterFrom, filterTo } = useLocationSearch(
   () => direction.value,
+  () => (direction.value === 'intercity' && countryId.value ? countryId.value : undefined),
 );
 
 // ─── Ads ──────────────────────────────────────────────────────────────────────
@@ -193,13 +255,23 @@ function confirmDirection() {
   localStorage.setItem('direction', direction.value);
   directionChosen.value = true;
   void loadAds();
+  if (direction.value === 'intercity') {
+    void loadDefaultCountry().then(() => loadInitial());
+  } else {
+    void loadInitial();
+  }
 }
 
 function onDirectionChange() {
   localStorage.setItem('direction', direction.value);
+  countryId.value = null;
   resetFilters();
-  void loadInitial();
   void loadAds();
+  if (direction.value === 'intercity') {
+    void loadDefaultCountry().then(() => loadInitial());
+  } else {
+    void loadInitial();
+  }
 }
 
 async function loadAds() {
@@ -248,7 +320,11 @@ function setupWebSocket() {
 onMounted(() => {
   if (directionChosen.value) {
     void loadAds();
-    void loadInitial();
+    if (direction.value === 'intercity') {
+      void loadDefaultCountry().then(() => loadInitial());
+    } else {
+      void loadInitial();
+    }
   }
   setupWebSocket();
 });

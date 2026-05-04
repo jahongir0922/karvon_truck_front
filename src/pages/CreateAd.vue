@@ -8,6 +8,33 @@
       <q-radio v-model="form.direction" val="intercity" label="Shaharlararo" @update:model-value="onDirectionChange" />
     </div>
 
+    <!-- Mamlakat (faqat shaharlararo) -->
+    <q-select
+      v-if="form.direction === 'intercity'"
+      filled
+      v-model="form.countryId"
+      use-input
+      clearable
+      input-debounce="400"
+      label="Mamlakat"
+      :options="countryOptions"
+      option-label="label"
+      option-value="value"
+      emit-value
+      map-options
+      @filter="filterCountry"
+      behavior="menu"
+    >
+      <template #option="{ itemProps, opt }">
+        <q-item v-bind="itemProps">
+          <q-item-section>{{ opt.label }}</q-item-section>
+        </q-item>
+      </template>
+      <template #no-option>
+        <q-item><q-item-section class="text-grey">Qidirish uchun matn kiriting</q-item-section></q-item>
+      </template>
+    </q-select>
+
     <section class="grid sm:grid-cols-2 gap-3">
       <!-- Qayerdan -->
       <q-select
@@ -222,8 +249,9 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue';
 import { useQuasar, QForm } from 'quasar';
-import { apiCreateAd } from 'src/api';
+import { apiCreateAd, apiGetCountries } from 'src/api';
 import { useLocationSearch } from 'src/composables/useLocationSearch';
+import type { Country } from 'src/types';
 
 const $q = useQuasar();
 
@@ -235,8 +263,14 @@ const formRef = ref<QForm | null>(null);
 const loading = ref(false);
 const errorMsg = ref('');
 
+interface CountryOption {
+  label: string;
+  value: number;
+}
+
 interface AdForm {
   direction: 'international' | 'intercity';
+  countryId: number | null;
   fromAddress: string;
   toAddress: string;
   truckType: string[];
@@ -255,6 +289,7 @@ interface AdForm {
 
 const form = reactive<AdForm>({
   direction: 'intercity',
+  countryId: null,
   fromAddress: '',
   toAddress: '',
   truckType: [],
@@ -271,18 +306,55 @@ const form = reactive<AdForm>({
   clientName: '',
 });
 
+// ─── Country selector ──────────────────────────────────────────────────────────
+const countryOptions = ref<CountryOption[]>([]);
+
+function toCountryOption(c: Country): CountryOption {
+  const label = c.translations?.['uz'] ?? c.translations?.['ru'] ?? c.name;
+  return { label, value: c.id };
+}
+
+async function loadDefaultCountry() {
+  const res = await apiGetCountries({ q: 'uzbek' });
+  const countries = res.data.data;
+  countryOptions.value = countries.map(toCountryOption);
+  if (countries.length && form.countryId === null) {
+    const uz = countries.find((c) => c.iso2 === 'UZ') ?? countries[0];
+    if (uz) form.countryId = uz.id;
+  }
+}
+
+function filterCountry(val: string, update: (fn: () => void) => void) {
+  void apiGetCountries({ q: val || 'a' }).then((res) => {
+    update(() => {
+      countryOptions.value = res.data.data.map(toCountryOption);
+    });
+  });
+}
+
+// ─── Location search ───────────────────────────────────────────────────────────
 const { fromOptions, toOptions, loadInitial, filterFrom, filterTo, clearOptions } = useLocationSearch(
   () => form.direction,
+  () => (form.direction === 'intercity' && form.countryId ? form.countryId : undefined),
 );
 
 function onDirectionChange() {
   form.fromAddress = '';
   form.toAddress = '';
-  void loadInitial();
+  form.countryId = null;
+  if (form.direction === 'intercity') {
+    void loadDefaultCountry().then(() => loadInitial());
+  } else {
+    void loadInitial();
+  }
 }
 
 onMounted(() => {
-  void loadInitial();
+  if (form.direction === 'intercity') {
+    void loadDefaultCountry().then(() => loadInitial());
+  } else {
+    void loadInitial();
+  }
 });
 
 async function submitAd() {
@@ -327,6 +399,7 @@ async function submitAd() {
 
 function resetForm() {
   form.direction = 'intercity';
+  form.countryId = null;
   form.fromAddress = '';
   form.toAddress = '';
   form.truckType = [];
