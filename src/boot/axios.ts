@@ -32,7 +32,7 @@ export default defineBoot(() => {
           loaderOff();
         }
       }
-      return Promise.reject(new Error(error));
+      return Promise.reject(error instanceof Error ? error : new Error(String(error)));
     },
   );
   axios.interceptors.response.use(
@@ -64,7 +64,7 @@ export default defineBoot(() => {
       } else if (error.code != 'ERR_NETWORK') {
         errorModal(error);
       }
-      return Promise.reject(new Error(error));
+      return Promise.reject(error instanceof Error ? error : new Error(String(error)));
     },
   );
 

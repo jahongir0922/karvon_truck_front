@@ -222,7 +222,6 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue';
 import { useQuasar, QForm } from 'quasar';
-import axios from 'axios';
 import { apiCreateAd } from 'src/api';
 import { useLocationSearch } from 'src/composables/useLocationSearch';
 
@@ -312,16 +311,12 @@ async function submitAd() {
     });
     $q.notify({ type: 'positive', message: "E'lon muvaffaqiyatli qo'shildi!" });
     resetForm();
-  } catch (err) {
-    if (axios.isAxiosError(err)) {
-      const msg = err.response?.data?.message;
-      if (Array.isArray(msg)) {
-        errorMsg.value = msg.join(', ');
-      } else if (typeof msg === 'string') {
-        errorMsg.value = msg;
-      } else {
-        errorMsg.value = "Xatolik yuz berdi. Iltimos, qayta urinib ko'ring.";
-      }
+  } catch (err: unknown) {
+    const msg = (err as { response?: { data?: { message?: unknown } } })?.response?.data?.message;
+    if (Array.isArray(msg)) {
+      errorMsg.value = msg.join(', ');
+    } else if (typeof msg === 'string') {
+      errorMsg.value = msg;
     } else {
       errorMsg.value = "Xatolik yuz berdi. Iltimos, qayta urinib ko'ring.";
     }

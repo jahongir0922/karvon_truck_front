@@ -74,7 +74,7 @@ export default defineConfig((ctx) => {
       config: {},
 
       // Quasar plugins
-      plugins: ['Loading'],
+      plugins: ['Loading', 'Notify'],
     },
 
     animations: [],
