@@ -56,15 +56,96 @@
           <q-form ref="editFormRef" class="flex flex-col p-4 gap-3 max-w-[800px] mx-auto" @submit.prevent="saveEdit">
 
             <div class="flex gap-4">
-              <q-radio v-model="editForm.direction" val="international" label="Xalqaro" />
-              <q-radio v-model="editForm.direction" val="intercity" label="Shaharlararo" />
+              <q-radio v-model="editForm.direction" val="international" label="Xalqaro"
+                @update:model-value="onEditDirectionChange" />
+              <q-radio v-model="editForm.direction" val="intercity" label="Shaharlararo"
+                @update:model-value="onEditDirectionChange" />
             </div>
 
+            <!-- Mamlakat (faqat shaharlararo) -->
+            <q-select
+              v-if="editForm.direction === 'intercity'"
+              filled
+              v-model="editForm.countryId"
+              use-input
+              clearable
+              input-debounce="400"
+              label="Mamlakat"
+              :options="countryOptions"
+              option-label="label"
+              option-value="value"
+              emit-value
+              map-options
+              @filter="filterCountry"
+              @update:model-value="onEditCountryChange"
+              behavior="menu"
+            >
+              <template #option="{ itemProps, opt }">
+                <q-item v-bind="itemProps">
+                  <q-item-section>{{ opt.label }}</q-item-section>
+                </q-item>
+              </template>
+              <template #no-option>
+                <q-item><q-item-section class="text-grey">Qidirish uchun matn kiriting</q-item-section></q-item>
+              </template>
+            </q-select>
+
             <section class="grid sm:grid-cols-2 gap-3">
-              <q-input filled v-model="editForm.fromAddress" label="Qayerdan *"
-                :rules="[(v) => !!v || 'Majburiy maydon']" lazy-rules />
-              <q-input filled v-model="editForm.toAddress" label="Qayerga *"
-                :rules="[(v) => !!v || 'Majburiy maydon']" lazy-rules />
+              <q-select
+                filled
+                v-model="editForm.fromAddress"
+                use-input
+                clearable
+                input-debounce="400"
+                label="Qayerdan *"
+                :options="fromOptions"
+                option-label="label"
+                option-value="value"
+                emit-value
+                map-options
+                @filter="filterFrom"
+                @virtual-scroll="(e) => onFromScroll(e.to)"
+                behavior="menu"
+                :rules="[(v) => !!v || 'Majburiy maydon']"
+                lazy-rules
+              >
+                <template #option="{ itemProps, opt }">
+                  <q-item v-bind="itemProps">
+                    <q-item-section>{{ opt.label }}</q-item-section>
+                  </q-item>
+                </template>
+                <template #no-option>
+                  <q-item><q-item-section class="text-grey">Qidirish uchun matn kiriting</q-item-section></q-item>
+                </template>
+              </q-select>
+
+              <q-select
+                filled
+                v-model="editForm.toAddress"
+                use-input
+                clearable
+                input-debounce="400"
+                label="Qayerga *"
+                :options="toOptions"
+                option-label="label"
+                option-value="value"
+                emit-value
+                map-options
+                @filter="filterTo"
+                @virtual-scroll="(e) => onToScroll(e.to)"
+                behavior="menu"
+                :rules="[(v) => !!v || 'Majburiy maydon']"
+                lazy-rules
+              >
+                <template #option="{ itemProps, opt }">
+                  <q-item v-bind="itemProps">
+                    <q-item-section>{{ opt.label }}</q-item-section>
+                  </q-item>
+                </template>
+                <template #no-option>
+                  <q-item><q-item-section class="text-grey">Qidirish uchun matn kiriting</q-item-section></q-item>
+                </template>
+              </q-select>
 
               <q-select filled v-model="editForm.truckType" multiple use-chips clearable
                 label="Mashina turi" :options="TRUCK_TYPES" behavior="menu">
@@ -128,8 +209,9 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue';
 import { useQuasar, QForm } from 'quasar';
-import { apiGetMyAds, apiUpdateAd } from 'src/api';
-import type { Advertisement } from 'src/types';
+import { apiGetMyAds, apiUpdateAd, apiGetCountries } from 'src/api';
+import { useLocationSearch } from 'src/composables/useLocationSearch';
+import type { Advertisement, Country } from 'src/types';
 
 const $q = useQuasar();
 
@@ -147,8 +229,11 @@ const saving = ref(false);
 const editError = ref('');
 let editingId = '';
 
+interface CountryOption { label: string; value: number }
+
 interface EditForm {
   direction: 'international' | 'intercity';
+  countryId: number | null;
   fromAddress: string;
   toAddress: string;
   truckType: string[];
@@ -165,8 +250,66 @@ interface EditForm {
   clientName: string;
 }
 
+const countryOptions = ref<CountryOption[]>([]);
+
+function toCountryOption(c: Country): CountryOption {
+  const label = c.translations?.['uz'] ?? c.translations?.['ru'] ?? c.name;
+  return { label, value: c.id };
+}
+
+function filterCountry(val: string, update: (fn: () => void) => void) {
+  void apiGetCountries({ q: val || 'a', limit: 30 }).then((res) => {
+    update(() => { countryOptions.value = res.data.data.map(toCountryOption); });
+  });
+}
+
+async function loadDefaultCountry() {
+  const res = await apiGetCountries({ q: 'uzbek', limit: 30 });
+  countryOptions.value = res.data.data.map(toCountryOption);
+  if (editForm.countryId === null) {
+    const uz = res.data.data.find((c) => c.iso2 === 'UZ') ?? res.data.data[0];
+    if (uz) editForm.countryId = uz.id;
+  }
+}
+
+const {
+  fromOptions, toOptions,
+  fromHasMore, toHasMore,
+  loadInitial, filterFrom, filterTo,
+  loadMoreFrom, loadMoreTo,
+  clearOptions,
+} = useLocationSearch(
+  () => editForm.direction,
+  () => (editForm.direction === 'intercity' && editForm.countryId ? editForm.countryId : undefined),
+);
+
+function onFromScroll(to: number) {
+  if (to >= fromOptions.value.length - 3 && fromHasMore.value) void loadMoreFrom();
+}
+function onToScroll(to: number) {
+  if (to >= toOptions.value.length - 3 && toHasMore.value) void loadMoreTo();
+}
+
+function onEditDirectionChange() {
+  editForm.countryId = null;
+  editForm.fromAddress = '';
+  editForm.toAddress = '';
+  if (editForm.direction === 'intercity') {
+    void loadDefaultCountry().then(() => loadInitial());
+  } else {
+    void loadInitial();
+  }
+}
+
+function onEditCountryChange() {
+  editForm.fromAddress = '';
+  editForm.toAddress = '';
+  void loadInitial();
+}
+
 const editForm = reactive<EditForm>({
   direction: 'intercity',
+  countryId: null,
   fromAddress: '',
   toAddress: '',
   truckType: [],
@@ -176,8 +319,8 @@ const editForm = reactive<EditForm>({
   advance: '',
   deliveryCost: '',
   currency: 'UZS',
-  volume: null as number | null,
-  weight: null as number | null,
+  volume: null,
+  weight: null,
   loadingTime: '',
   phone: '',
   clientName: '',
@@ -210,8 +353,15 @@ function openEdit(ad: Advertisement) {
   editForm.loadingTime = ad.loadingTime ?? '';
   editForm.phone = ad.phone;
   editForm.clientName = ad.clientName ?? '';
+  editForm.countryId = null;
+  clearOptions();
   editError.value = '';
   editDialog.value = true;
+  if (editForm.direction === 'intercity') {
+    void loadDefaultCountry().then(() => loadInitial());
+  } else {
+    void loadInitial();
+  }
 }
 
 async function saveEdit() {
