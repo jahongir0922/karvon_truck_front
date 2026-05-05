@@ -17,6 +17,8 @@ export default defineBoot(() => {
     (config) => {
       const token = localStorage.getItem('x-auth-token');
       if (token) config.headers['x-auth-token'] = token;
+      const locale = localStorage.getItem('locale') || 'uz';
+      config.headers['Accept-Language'] = locale;
       if (!config.headers['X-Skip-Loading']) {
         activeRequests++;
         if (activeRequests === 1) {

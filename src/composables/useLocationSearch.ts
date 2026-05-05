@@ -1,5 +1,4 @@
 import { ref } from 'vue';
-import { useI18n } from 'vue-i18n';
 import { apiSearchLocations, type LocationResult } from 'src/api';
 
 const LIMIT = 30;
@@ -8,8 +7,6 @@ export function useLocationSearch(
   getDirection: () => 'international' | 'intercity',
   getCountryId?: () => number | undefined,
 ) {
-  const { locale } = useI18n();
-
   const fromOptions = ref<LocationResult[]>([]);
   const toOptions = ref<LocationResult[]>([]);
   const fromHasMore = ref(false);
@@ -18,16 +15,9 @@ export function useLocationSearch(
   let currentFromQuery = '';
   let currentToQuery = '';
 
-  function getLang() {
-    const l = locale.value;
-    if (l.startsWith('ru')) return 'ru';
-    if (l.startsWith('en')) return 'en';
-    return 'uz';
-  }
-
   async function _fetch(q: string, offset = 0): Promise<LocationResult[]> {
     try {
-      const res = await apiSearchLocations(q, getDirection(), getCountryId?.(), LIMIT, offset, getLang());
+      const res = await apiSearchLocations(q, getDirection(), getCountryId?.(), LIMIT, offset);
       return res.data.data;
     } catch {
       return [];
