@@ -62,7 +62,7 @@
       >
         <template #option="{ itemProps, opt }">
           <q-item v-bind="itemProps">
-            <q-item-section>{{ opt.label }}</q-item-section>
+            <q-item-section>{{ locationLabel(opt.label) }}</q-item-section>
           </q-item>
         </template>
         <template #no-option>
@@ -94,7 +94,7 @@
       >
         <template #option="{ itemProps, opt }">
           <q-item v-bind="itemProps">
-            <q-item-section>{{ opt.label }}</q-item-section>
+            <q-item-section>{{ locationLabel(opt.label) }}</q-item-section>
           </q-item>
         </template>
         <template #no-option>
@@ -295,6 +295,14 @@ interface AdForm {
 }
 
 const savedDirection = (localStorage.getItem('createAd_direction') as AdForm['direction'] | null) ?? 'intercity';
+
+function locationLabel(label: string) {
+  if (form.direction === 'intercity') {
+    const idx = label.indexOf(', ');
+    return idx !== -1 ? label.slice(idx + 2) : label;
+  }
+  return label;
+}
 
 const form = reactive<AdForm>({
   direction: savedDirection,
