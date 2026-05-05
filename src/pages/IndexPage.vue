@@ -54,7 +54,7 @@
         >
           <template #option="{ itemProps, opt }">
             <q-item v-bind="itemProps">
-              <q-item-section>{{ opt.label }}</q-item-section>
+              <q-item-section>{{ locationLabel(opt.label) }}</q-item-section>
             </q-item>
           </template>
           <template #no-option>
@@ -80,7 +80,7 @@
         >
           <template #option="{ itemProps, opt }">
             <q-item v-bind="itemProps">
-              <q-item-section>{{ opt.label }}</q-item-section>
+              <q-item-section>{{ locationLabel(opt.label) }}</q-item-section>
             </q-item>
           </template>
           <template #no-option>
@@ -167,6 +167,14 @@ import type { Advertisement, Country } from 'src/types';
 const { t, locale } = useI18n();
 
 const TRUCK_TYPES = ['Tent', 'Ref', 'Plashchaniy', 'Konteyner', 'Bortovoy', 'Samosvал'];
+
+function locationLabel(label: string) {
+  if (direction.value === 'intercity') {
+    const idx = label.indexOf(', ');
+    return idx !== -1 ? label.slice(idx + 2) : label;
+  }
+  return label;
+}
 
 // ─── Direction ────────────────────────────────────────────────────────────────
 const direction = ref<'international' | 'intercity'>(
