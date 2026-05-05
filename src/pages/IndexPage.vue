@@ -7,6 +7,12 @@
         <q-btn flat dense icon="close" @click="drawerOpen = false" />
       </div>
       <div class="flex flex-col gap-3">
+        <!-- Yo'nalish -->
+        <div class="flex gap-4">
+          <q-radio v-model="direction" val="international" :label="t('ad.international')" @update:model-value="onDirectionChange" />
+          <q-radio v-model="direction" val="intercity" :label="t('ad.intercity')" @update:model-value="onDirectionChange" />
+        </div>
+
         <!-- Mamlakat (faqat shaharlararo) -->
         <q-select
           v-if="direction === 'intercity'"
