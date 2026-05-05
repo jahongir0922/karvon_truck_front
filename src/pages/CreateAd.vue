@@ -294,8 +294,10 @@ interface AdForm {
   clientName: string;
 }
 
+const savedDirection = (localStorage.getItem('createAd_direction') as AdForm['direction'] | null) ?? 'intercity';
+
 const form = reactive<AdForm>({
-  direction: 'intercity',
+  direction: savedDirection,
   countryId: null,
   fromAddress: '',
   toAddress: '',
@@ -382,6 +384,7 @@ function onCountryChange() {
 }
 
 function onDirectionChange() {
+  localStorage.setItem('createAd_direction', form.direction);
   form.fromAddress = '';
   form.toAddress = '';
   form.countryId = null;
