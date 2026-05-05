@@ -2,7 +2,7 @@
   <q-layout view="lHh Lpr lFf">
     <q-header elevated class="bg-grey-3 text-primary">
       <q-toolbar>
-        <q-toolbar-title class="font-bold">Karvon</q-toolbar-title>
+        <q-toolbar-title class="font-bold">Karvon Truck</q-toolbar-title>
         <q-select
           v-model="locale"
           :options="localeOptions"
