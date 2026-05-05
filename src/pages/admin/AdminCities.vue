@@ -28,6 +28,9 @@
       <template #body-cell-index="{ rowIndex }">
         <q-td>{{ rowIndex + 1 }}</q-td>
       </template>
+      <template #body-cell-country_name="{ row }">
+        <q-td>{{ countryIdToLabel[row.country_id] ?? row.country_name }}</q-td>
+      </template>
       <template #body-cell-actions="{ row }">
         <q-td class="text-right">
           <q-btn flat round dense icon="edit" color="primary" @click="openEdit(row)" />
@@ -83,7 +86,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue';
+import { ref, reactive, computed, onMounted } from 'vue';
 import { useQuasar } from 'quasar';
 import { useI18n } from 'vue-i18n';
 import { apiGetCities, apiGetProvincesByCountry, apiAdminCreateCity, apiAdminUpdateCity, apiAdminDeleteCity } from 'src/api';
@@ -93,6 +96,10 @@ import type { City } from 'src/types';
 const $q = useQuasar();
 const { t } = useI18n();
 const { countryOptions, loadCountryOptions, filterCountryOptions } = useAdminCountrySelect();
+
+const countryIdToLabel = computed(() =>
+  Object.fromEntries(countryOptions.value.map((o) => [o.value, o.label]))
+);
 
 const cities = ref<City[]>([]);
 const loading = ref(false);
