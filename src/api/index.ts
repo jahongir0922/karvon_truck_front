@@ -99,8 +99,9 @@ export const apiSearchLocations = (
   countryId?: number,
   limit = 30,
   offset = 0,
+  lang = 'uz',
 ) =>
   axios.get<Wrapped<LocationResult[]>>('locations', {
-    params: { q, direction, country_id: countryId, limit, offset },
+    params: { q, direction, country_id: countryId, limit, offset, lang },
     headers: { 'X-Skip-Loading': '1' },
   });
