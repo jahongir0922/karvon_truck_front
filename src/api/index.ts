@@ -40,11 +40,6 @@ export const apiGetCountries = (params?: { region?: string; subregion?: string; 
     headers: { 'X-Skip-Loading': '1' },
   });
 
-export const apiGetCountry = (id: number) =>
-  axios.get<Wrapped<Country>>(`countries/${id}`, {
-    headers: { 'X-Skip-Loading': '1' },
-  });
-
 // ─── Provinces ───────────────────────────────────────────────────────────────
 export const apiGetProvincesByCountry = (countryId: number) =>
   axios.get<Wrapped<Province[]>>(`province/country/${countryId}`, {
