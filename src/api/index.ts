@@ -30,6 +30,9 @@ export const apiCreateAd = (data: AdCreateDto) =>
 export const apiUpdateAd = (id: string, data: Record<string, unknown>) =>
   axios.put<Wrapped<Advertisement>>(`advertisements/${id}`, data);
 
+export const apiDeleteAd = (id: string) =>
+  axios.delete<Wrapped<{ _id: string; deleted: boolean }>>(`advertisements/${id}`);
+
 // ─── Countries ───────────────────────────────────────────────────────────────
 export const apiGetCountries = (params?: { region?: string; subregion?: string; q?: string; limit?: number; offset?: number }) =>
   axios.get<Wrapped<Country[]>>('countries', {

@@ -6,8 +6,9 @@ import {
   createWebHistory,
 } from 'vue-router';
 import routes from './routes';
+import { useAuthStore } from 'stores/auth';
 
-export default defineRouter(function (/* { store, ssrContext } */) {
+export default defineRouter(function ({ store }) {
   const createHistory = process.env.SERVER
     ? createMemoryHistory
     : (process.env.VUE_ROUTER_MODE === 'history' ? createWebHistory : createWebHashHistory);
@@ -18,10 +19,21 @@ export default defineRouter(function (/* { store, ssrContext } */) {
     history: createHistory(process.env.VUE_ROUTER_BASE),
   });
 
-  Router.beforeEach((to) => {
-    const token = localStorage.getItem('x-auth-token');
-    if (to.meta.requiresAuth && !token) {
+  Router.beforeEach(async (to) => {
+    const auth = useAuthStore(store);
+
+    if (to.meta.requiresAuth && !auth.isLoggedIn) {
       return { path: '/login', query: { redirect: to.fullPath } };
+    }
+
+    if (to.meta.requiresAdmin) {
+      // Token bor, lekin profil hali yuklanmagan bo'lsa (sahifa yangilangan holat)
+      if (!auth.user) await auth.fetchMe();
+      // fetchMe muvaffaqiyatsiz bo'lsa tokenni tozalaydi -> login'ga
+      if (!auth.isLoggedIn) {
+        return { path: '/login', query: { redirect: to.fullPath } };
+      }
+      if (!auth.isAdmin) return { path: '/' };
     }
   });
 

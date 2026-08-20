@@ -156,13 +156,23 @@
         <div v-if="filteredAds.length === 0 && allAds.length > 0" class="text-center text-grey-6 py-10">
           {{ t('index.noFilteredAds') }}
         </div>
+
+        <div v-if="hasMore" class="flex justify-center py-4">
+          <q-btn
+            flat
+            color="primary"
+            :label="t('index.loadMore')"
+            :loading="loadingMore"
+            @click="loadMoreAds"
+          />
+        </div>
       </template>
     </q-page>
   </main>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, reactive, onMounted } from 'vue';
+import { ref, computed, reactive, onMounted, onUnmounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import AdsCard from 'components/AdsCard.vue';
 import { apiGetAds, apiGetCountries } from 'src/api';
@@ -263,6 +273,13 @@ const drawerOpen = ref(false);
 const loading = ref(false);
 const allAds = ref<Advertisement[]>([]);
 
+// Sahifalash. Filtrlar mijoz tomonida ishlaydi, shuning uchun "ko'proq yuklash"
+// ko'proq xom e'lon oladi va filtr ular ustidan qayta hisoblanadi.
+const PER_PAGE = 50;
+const page = ref(1);
+const hasMore = ref(false);
+const loadingMore = ref(false);
+
 const filters = reactive({
   fromAddress: '',
   toAddress: '',
@@ -328,11 +345,30 @@ function onDirectionChange() {
 
 async function loadAds() {
   loading.value = true;
+  page.value = 1;
   try {
-    const res = await apiGetAds({ page: 1, perPage: 100 });
+    const res = await apiGetAds({ page: 1, perPage: PER_PAGE });
     allAds.value = res.data.data;
+    hasMore.value = res.data.data.length === PER_PAGE;
   } finally {
     loading.value = false;
+  }
+}
+
+async function loadMoreAds() {
+  if (loadingMore.value || !hasMore.value) return;
+  loadingMore.value = true;
+  try {
+    const next = page.value + 1;
+    const res = await apiGetAds({ page: next, perPage: PER_PAGE });
+    const incoming = res.data.data;
+    // WebSocket orqali allaqachon tushganlarini takrorlamaymiz
+    const fresh = incoming.filter((a) => !allAds.value.some((x) => x._id === a._id));
+    allAds.value = [...allAds.value, ...fresh];
+    page.value = next;
+    hasMore.value = incoming.length === PER_PAGE;
+  } finally {
+    loadingMore.value = false;
   }
 }
 
@@ -347,25 +383,79 @@ function resetFilters() {
 }
 
 // ─── WebSocket ────────────────────────────────────────────────────────────────
+interface AdSocketMessage {
+  type: 'initial_ads' | 'ad_change';
+  data: Advertisement | Advertisement[] | null;
+  documentKey?: { _id: string } | null;
+  operation?: string;
+}
+
+let ws: WebSocket | null = null;
+let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+let disposed = false;
+
+function removeAd(id: string) {
+  const idx = allAds.value.findIndex((x) => x._id === id);
+  if (idx >= 0) allAds.value.splice(idx, 1);
+}
+
+function upsertAd(ad: Advertisement) {
+  // Nofaol qilingan e'lon ro'yxatda qolib ketmasin (REST ro'yxati ham uni bermaydi)
+  if (ad.isActive === false) {
+    removeAd(ad._id);
+    return;
+  }
+  const idx = allAds.value.findIndex((x) => x._id === ad._id);
+  if (idx >= 0) allAds.value.splice(idx, 1, ad);
+  else allAds.value.unshift(ad);
+}
+
 function setupWebSocket() {
+  if (disposed) return;
   const wsUrl = (process.env.WS_URL || 'ws://localhost:5000/ws/') + 'ads';
-  const ws = new WebSocket(wsUrl);
+  ws = new WebSocket(wsUrl);
 
   ws.onmessage = (event) => {
-    const msg = JSON.parse(event.data as string) as { type: string; data: Advertisement | Advertisement[] };
+    const msg = JSON.parse(event.data as string) as AdSocketMessage;
+
     if (msg.type === 'initial_ads') {
-      const incoming = msg.data as Advertisement[];
-      const newAds = incoming.filter((a) => !allAds.value.find((x) => x._id === a._id));
+      const incoming = (msg.data as Advertisement[]) ?? [];
+      const newAds = incoming.filter((a) => !allAds.value.some((x) => x._id === a._id));
       allAds.value = [...newAds, ...allAds.value];
-    } else if (msg.type === 'ad_change') {
-      const ad = msg.data as Advertisement;
-      const idx = allAds.value.findIndex((x) => x._id === ad._id);
-      if (idx >= 0) allAds.value.splice(idx, 1, ad);
-      else allAds.value.unshift(ad);
+      return;
+    }
+
+    if (msg.type === 'ad_change') {
+      // O'chirishda serverda fullDocument bo'lmaydi — id documentKey'dan olinadi
+      if (msg.operation === 'delete') {
+        if (msg.documentKey?._id) removeAd(String(msg.documentKey._id));
+        return;
+      }
+      if (msg.data) upsertAd(msg.data as Advertisement);
     }
   };
 
-  ws.onclose = () => { setTimeout(setupWebSocket, 5000); };
+  // Uzilganda qayta ulanamiz, lekin sahifa yopilgandan keyin emas
+  ws.onclose = () => {
+    if (disposed) return;
+    reconnectTimer = setTimeout(setupWebSocket, 5000);
+  };
+}
+
+// Komponent yo'q qilinganda socketni ham, qayta ulanish taymerini ham to'xtatamiz.
+// Aks holda har safar sahifaga qaytganda yangi socket qo'shilib boraveradi.
+function teardownWebSocket() {
+  disposed = true;
+  if (reconnectTimer) {
+    clearTimeout(reconnectTimer);
+    reconnectTimer = null;
+  }
+  if (ws) {
+    ws.onclose = null;
+    ws.onmessage = null;
+    ws.close();
+    ws = null;
+  }
 }
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
@@ -380,4 +470,6 @@ onMounted(() => {
   }
   setupWebSocket();
 });
+
+onUnmounted(teardownWebSocket);
 </script>

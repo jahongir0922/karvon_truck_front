@@ -89,6 +89,8 @@ export default {
     inactive: "Nofaol",
     editTitle: "E'lonni tahrirlash",
     updated: "E'lon yangilandi!",
+    deleted: "E'lon o'chirildi!",
+    confirmDelete: "Bu e'lonni butunlay o'chirmoqchimisiz? Buni qaytarib bo'lmaydi.",
   },
   index: {
     filterTitle: "Filtr",
@@ -96,6 +98,7 @@ export default {
     continue: "Davom etish",
     noAds: "Hozircha e'lonlar yo'q",
     noFilteredAds: "Filtrga mos e'lon topilmadi",
+    loadMore: "Ko'proq yuklash",
     minPrice: "Min narx",
     maxPrice: "Max narx",
     minWeight: "Min vazn (t)",

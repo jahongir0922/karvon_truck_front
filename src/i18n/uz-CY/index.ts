@@ -89,6 +89,8 @@ export default {
     inactive: "Нофаол",
     editTitle: "Эълонни таҳрирлаш",
     updated: "Эълон янгиланди!",
+    deleted: "Эълон ўчирилди!",
+    confirmDelete: "Бу эълонни бутунлай ўчирмоқчимисиз? Буни қайтариб бўлмайди.",
   },
   index: {
     filterTitle: "Филтр",
@@ -96,6 +98,7 @@ export default {
     continue: "Давом этиш",
     noAds: "Ҳозирча эълонлар йўқ",
     noFilteredAds: "Филтрга мос эълон топилмади",
+    loadMore: "Кўпроқ юклаш",
     minPrice: "Мин нарх",
     maxPrice: "Макс нарх",
     minWeight: "Мин вазн (т)",

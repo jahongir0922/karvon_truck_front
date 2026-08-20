@@ -89,6 +89,8 @@ export default {
     inactive: "Неактивно",
     editTitle: "Редактировать объявление",
     updated: "Объявление обновлено!",
+    deleted: "Объявление удалено!",
+    confirmDelete: "Удалить это объявление навсегда? Действие необратимо.",
   },
   index: {
     filterTitle: "Фильтр",
@@ -96,6 +98,7 @@ export default {
     continue: "Продолжить",
     noAds: "Объявлений пока нет",
     noFilteredAds: "По фильтру объявления не найдены",
+    loadMore: "Показать ещё",
     minPrice: "Мин цена",
     maxPrice: "Макс цена",
     minWeight: "Мин вес (т)",

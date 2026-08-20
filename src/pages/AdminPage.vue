@@ -22,8 +22,10 @@ const { t } = useI18n();
 const auth = useAuthStore();
 const router = useRouter();
 
+// Asosiy himoya router guard'da (meta.requiresAdmin).
+// Bu — ikkinchi qatlam: guard chetlab o'tilsa ham sahifa ochilmaydi.
 onMounted(async () => {
-  await auth.fetchMe();
+  if (!auth.user) await auth.fetchMe();
   if (!auth.isAdmin) {
     void router.replace('/');
   }

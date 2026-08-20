@@ -15,7 +15,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'admin',
         component: () => import('pages/AdminPage.vue'),
-        meta: { requiresAuth: true },
+        meta: { requiresAuth: true, requiresAdmin: true },
         redirect: '/admin/countries',
         children: [
           { path: 'countries', component: () => import('pages/admin/AdminCountries.vue') },

@@ -38,10 +38,38 @@
               :loading="togglingId === ad._id"
               @click="toggleActive(ad)"
             />
+            <q-btn
+              flat round dense
+              icon="delete"
+              color="negative"
+              :loading="deletingId === ad._id"
+              @click="askDelete(ad)"
+            />
           </div>
         </div>
       </q-card>
     </div>
+
+    <!-- Delete confirm dialog -->
+    <q-dialog v-model="deleteDialog">
+      <q-card class="min-w-[280px]">
+        <q-card-section class="text-base">
+          {{ t('myAds.confirmDelete') }}
+        </q-card-section>
+        <q-card-section v-if="adToDelete" class="text-sm text-grey-7 pt-0">
+          {{ adToDelete.fromAddress }} → {{ adToDelete.toAddress }}
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn flat :label="t('common.cancel')" v-close-popup />
+          <q-btn
+            color="negative"
+            :label="t('common.delete')"
+            :loading="deletingId !== null"
+            @click="confirmDelete"
+          />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
 
     <!-- Edit dialog -->
     <q-dialog v-model="editDialog" maximized>
@@ -210,7 +238,7 @@
 import { ref, reactive, onMounted } from 'vue';
 import { useQuasar, QForm } from 'quasar';
 import { useI18n } from 'vue-i18n';
-import { apiGetMyAds, apiUpdateAd, apiGetCountries } from 'src/api';
+import { apiGetMyAds, apiUpdateAd, apiDeleteAd, apiGetCountries } from 'src/api';
 import { useLocationSearch } from 'src/composables/useLocationSearch';
 import { countryLabel } from 'src/composables/useAdminCountrySelect';
 import type { Advertisement, Country } from 'src/types';
@@ -225,6 +253,9 @@ const CURRENCIES = ['UZS', 'USD', 'RUB'];
 const loading = ref(false);
 const ads = ref<Advertisement[]>([]);
 const togglingId = ref<string | null>(null);
+const deletingId = ref<string | null>(null);
+const deleteDialog = ref(false);
+const adToDelete = ref<Advertisement | null>(null);
 
 const editDialog = ref(false);
 const editFormRef = ref<QForm | null>(null);
@@ -410,6 +441,33 @@ async function toggleActive(ad: Advertisement) {
     if (idx >= 0) ads.value[idx] = res.data.data;
   } finally {
     togglingId.value = null;
+  }
+}
+
+function askDelete(ad: Advertisement) {
+  adToDelete.value = ad;
+  deleteDialog.value = true;
+}
+
+async function confirmDelete() {
+  const ad = adToDelete.value;
+  if (!ad) return;
+
+  deletingId.value = ad._id;
+  try {
+    await apiDeleteAd(ad._id);
+    ads.value = ads.value.filter((a) => a._id !== ad._id);
+    deleteDialog.value = false;
+    adToDelete.value = null;
+    $q.notify({ type: 'positive', message: t('myAds.deleted') });
+  } catch (err: unknown) {
+    const msg = (err as { response?: { data?: { message?: unknown } } })?.response?.data?.message;
+    $q.notify({
+      type: 'negative',
+      message: typeof msg === 'string' ? msg : t('common.error'),
+    });
+  } finally {
+    deletingId.value = null;
   }
 }
 
