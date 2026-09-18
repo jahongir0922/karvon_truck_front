@@ -213,9 +213,18 @@ export const apiTelegramMessages = (params: TelegramMessagesQuery) =>
   axios.get<Wrapped<TelegramMessagesPage>>('telegram/messages', { params, ...silent });
 
 export const apiTelegramProcessMessage = (id: string) =>
-  axios.post<Wrapped<{ message: TelegramMessage; adsCreated: number; error: string | null }>>(
-    `telegram/messages/${id}/process`,
-  );
+  axios.post<
+    Wrapped<{
+      message: TelegramMessage;
+      adsCreated: number;
+      error: string | null;
+      /** Login yoki limit — xabar aybdor emas */
+      unavailable?: boolean;
+      skipped?: 'duplicate' | 'empty' | null;
+      /** Limit tugagan bo'lsa tiklanish vaqti (ISO) */
+      retryAt?: string | null;
+    }>
+  >(`telegram/messages/${id}/process`);
 
 // ─── Locations (unified search) ──────────────────────────────────────────────
 export interface LocationResult {

@@ -66,8 +66,18 @@
               :label="status.ai.enabled ? t('telegram.aiOn') : t('telegram.aiOff')"
               @update:model-value="(v: boolean) => onAiToggle(v)"
             />
-            <span class="text-grey-7 text-xs">{{ status.ai.model }}</span>
-            <span v-if="!status.ai.configured" class="text-negative text-xs">
+            <span class="text-grey-7 text-xs">{{ status.ai.provider }} · {{ status.ai.model }}</span>
+            <span v-if="status.ai.retryAt" class="text-warning text-xs">
+              {{ t('telegram.aiLimited', { time: formatDateTime(status.ai.retryAt, locale) }) }}
+            </span>
+            <span
+              v-else-if="status.ai.providerInfo"
+              :class="status.ai.configured ? 'text-grey-7' : 'text-negative'"
+              class="text-xs"
+            >
+              {{ status.ai.providerInfo }}
+            </span>
+            <span v-else-if="!status.ai.configured" class="text-negative text-xs">
               {{ t('telegram.aiNotConfigured') }}
             </span>
           </div>
@@ -75,14 +85,15 @@
             {{ t('telegram.aiProcessed') }}: {{ status.ai.processedSinceStart }} /
             {{ status.ai.adsCreatedSinceStart }}
           </div>
+          <div class="text-xs text-grey-7">
+            {{ t('telegram.duplicatesSkipped') }}: {{ status.ai.duplicatesSinceStart ?? 0 }}
+          </div>
         </div>
       </div>
       <div v-if="status?.lastError && !status.sessionInvalid" class="text-negative text-sm mt-2">
         {{ t('telegram.lastError') }}: {{ status.lastError }}
       </div>
-      <div v-if="status?.ai.lastError" class="text-negative text-sm mt-1">
-        AI: {{ status.ai.lastError }}
-      </div>
+      <div v-if="aiError" class="text-negative text-sm mt-1">AI: {{ aiError }}</div>
     </q-card>
 
     <!-- Telegram hisobi: kirish / chiqish -->
@@ -375,7 +386,13 @@
         </template>
         <template #body-cell-state="{ row }">
           <q-td>
-            <q-badge :color="row.isProcessed ? (row.aiError ? 'orange' : 'positive') : 'grey'">
+            <q-badge v-if="row.skipReason === 'duplicate'" color="blue-grey">
+              {{ t('telegram.duplicate') }}
+            </q-badge>
+            <q-badge v-else-if="row.skipReason === 'empty'" color="grey-6">
+              {{ t('telegram.noText') }}
+            </q-badge>
+            <q-badge v-else :color="row.isProcessed ? (row.aiError ? 'orange' : 'positive') : 'grey'">
               {{ row.isProcessed ? t('telegram.processed') : t('telegram.unprocessed') }}
             </q-badge>
             <div v-if="row.adsCreated" class="text-xs text-grey-7">
@@ -479,6 +496,13 @@ const LOGIN_POLL_MS = 3_000;
 
 // ── Holat ──
 const status = ref<TelegramStatus | null>(null);
+
+// Limit yoki login holati AI blokida allaqachon ko'rsatilgan — qizil qatorda takrorlanmasin
+const aiError = computed(() => {
+  const ai = status.value?.ai;
+  if (!ai?.lastError || ai.retryAt || ai.lastError === ai.providerInfo) return null;
+  return ai.lastError;
+});
 const loadingStatus = ref(false);
 const reconnecting = ref(false);
 
@@ -809,11 +833,20 @@ async function processNow(row: TelegramMessage) {
   processingId.value = row._id;
   try {
     const res = await apiTelegramProcessMessage(row._id);
-    const { message, adsCreated, error } = res.data.data;
+    const { message, adsCreated, error, skipped, unavailable, retryAt } = res.data.data;
     const idx = messages.value.findIndex((m) => m._id === row._id);
     if (idx >= 0) messages.value[idx] = message;
-    if (error) {
+    if (error && unavailable && retryAt) {
+      $q.notify({
+        type: 'warning',
+        message: t('telegram.aiLimited', { time: formatDateTime(retryAt, locale.value) }),
+      });
+    } else if (error) {
       $q.notify({ type: 'negative', message: error });
+    } else if (skipped === 'duplicate') {
+      $q.notify({ type: 'info', message: t('telegram.markedDuplicate') });
+    } else if (skipped === 'empty') {
+      $q.notify({ type: 'info', message: t('telegram.noText') });
     } else {
       $q.notify({ type: 'positive', message: t('telegram.processResult', { n: adsCreated }) });
     }

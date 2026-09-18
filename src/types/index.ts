@@ -151,6 +151,10 @@ export interface TelegramMessage {
   aiAttempts?: number;
   aiError?: string | null;
   adsCreated?: number;
+  /** AI ga yuborilmagan sabab: takror yoki matn yo'q */
+  skipReason?: 'duplicate' | 'empty' | null;
+  /** Takror bo'lsa — asl xabar */
+  duplicateOf?: string | null;
   createdAt: string;
 }
 
@@ -185,11 +189,17 @@ export interface TelegramStatus {
   ai: {
     enabled: boolean;
     configured: boolean;
+    provider: 'openrouter' | 'claude-code';
+    providerInfo: string | null;
     model: string;
     isProcessing: boolean;
     processedSinceStart: number;
     adsCreatedSinceStart: number;
+    /** Takror deb topilib, AI ga yuborilmagan xabarlar */
+    duplicatesSinceStart: number;
     lastError: string | null;
+    /** Limit tugagan bo'lsa tiklanish vaqti (ISO) */
+    retryAt: string | null;
   };
 }
 
