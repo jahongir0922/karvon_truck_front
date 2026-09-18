@@ -1,3 +1,5 @@
+import type { Direction } from 'src/constants';
+
 export interface User {
   _id: string;
   name: string;
@@ -9,6 +11,7 @@ export interface User {
 
 export interface Advertisement {
   _id: string;
+  // Odatda Direction, lekin backend (Telegram/AI import) boshqa satr ham saqlashi mumkin
   direction: string;
   fromAddress: string;
   toAddress: string;
@@ -27,8 +30,15 @@ export interface Advertisement {
   isAI: boolean;
   phone: string;
   clientName?: string;
+  userId?: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface Translations {
+  uz?: string;
+  en?: string;
+  ru?: string;
 }
 
 export interface City {
@@ -43,7 +53,7 @@ export interface City {
   country_name: string;
   latitude: string;
   longitude: string;
-  translations: { uz?: string; en?: string; ru?: string };
+  translations: Translations;
 }
 
 export interface Country {
@@ -69,11 +79,11 @@ export interface Province {
   country_code: string;
   country_name: string;
   state_code: string;
-  translations: { uz?: string; en?: string; ru?: string };
+  translations: Translations;
 }
 
 export interface AdCreateDto {
-  direction: string;
+  direction: Direction;
   fromAddress: string;
   toAddress: string;
   truckType: string[];
@@ -88,4 +98,27 @@ export interface AdCreateDto {
   currency?: string | undefined;
   phone: string;
   clientName?: string | undefined;
+}
+
+/**
+ * Tahrirlash: undefined → maydon tegilmaydi, null → maydon tozalanadi
+ * (backend '' ni ham null deb qabul qiladi).
+ */
+export interface AdUpdateDto {
+  direction?: Direction;
+  fromAddress?: string;
+  toAddress?: string;
+  truckType?: string[];
+  loadName?: string | null;
+  weight?: number | null;
+  paymentType?: string | null;
+  loadingTime?: string | null;
+  volume?: number | null;
+  descriptions?: string | null;
+  advance?: string | null;
+  deliveryCost?: string | null;
+  currency?: string | null;
+  isActive?: boolean;
+  phone?: string;
+  clientName?: string | null;
 }

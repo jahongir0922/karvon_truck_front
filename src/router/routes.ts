@@ -21,6 +21,7 @@ const routes: RouteRecordRaw[] = [
           { path: 'countries', component: () => import('pages/admin/AdminCountries.vue') },
           { path: 'provinces', component: () => import('pages/admin/AdminProvinces.vue') },
           { path: 'cities', component: () => import('pages/admin/AdminCities.vue') },
+          { path: 'users', component: () => import('pages/admin/AdminUsers.vue') },
         ],
       },
     ],

@@ -2,10 +2,11 @@
   <q-page class="p-3 max-w-[1100px] mx-auto">
     <div class="text-lg font-bold mb-4">{{ t('admin.title') }}</div>
 
-    <q-tabs dense align="left" class="mb-4">
-      <q-route-tab to="/admin/countries" :label="t('admin.countries')" />
-      <q-route-tab to="/admin/provinces" :label="t('admin.provinces')" />
-      <q-route-tab to="/admin/cities" :label="t('admin.cities')" />
+    <q-tabs dense align="left" class="mb-4" no-caps>
+      <q-route-tab to="/admin/countries" icon="public" :label="t('admin.countries')" />
+      <q-route-tab to="/admin/provinces" icon="map" :label="t('admin.provinces')" />
+      <q-route-tab to="/admin/cities" icon="location_city" :label="t('admin.cities')" />
+      <q-route-tab to="/admin/users" icon="people" :label="t('admin.users')" />
     </q-tabs>
 
     <router-view />

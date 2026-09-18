@@ -2,9 +2,8 @@ import { ref, computed } from 'vue';
 import { defineStore } from 'pinia';
 import axios from 'axios';
 import { apiLogin, apiGetMe, apiCreateUser } from 'src/api';
+import { TOKEN_KEY } from 'src/constants';
 import type { User } from 'src/types';
-
-const TOKEN_KEY = 'x-auth-token';
 
 export const useAuthStore = defineStore('auth', () => {
   const token = ref<string>(localStorage.getItem(TOKEN_KEY) ?? '');
@@ -26,26 +25,29 @@ export const useAuthStore = defineStore('auth', () => {
     delete axios.defaults.headers.common['x-auth-token'];
   }
 
-  async function login(email: string, password: string) {
-    const res = await apiLogin(email, password);
-    const t = res.headers['x-auth-token'] as string | undefined;
-    if (t) applyToken(t);
-    return res.data.data;
-  }
-
-  async function register(name: string, email: string, password: string) {
-    const res = await apiCreateUser({ name, email, password });
-    return res.data.data;
-  }
-
+  /** Profilni yuklaydi; token yaroqsiz bo'lsa (401) sessiya interceptor'da tozalanadi. */
   async function fetchMe() {
     if (!token.value) return;
     try {
       const res = await apiGetMe();
       user.value = res.data.data;
     } catch {
-      clearToken();
+      // 401 — interceptor logout qiladi; boshqa xatolarda (tarmoq) tokenni saqlab qolamiz
     }
+  }
+
+  async function login(email: string, password: string) {
+    const res = await apiLogin(email, password);
+    const t = res.headers['x-auth-token'] as string | undefined;
+    if (!t) throw new Error('x-auth-token header missing in login response');
+    applyToken(t);
+    await fetchMe();
+  }
+
+  /** Ro'yxatdan o'tkazib, darhol tizimga kiritadi. */
+  async function register(name: string, email: string, password: string) {
+    await apiCreateUser({ name, email, password });
+    await login(email, password);
   }
 
   function logout() {

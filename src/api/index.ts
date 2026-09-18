@@ -1,104 +1,166 @@
 import axios from 'axios';
-import type { Advertisement, AdCreateDto, City, Country, Province, User } from 'src/types';
+import type {
+  Advertisement,
+  AdCreateDto,
+  AdUpdateDto,
+  City,
+  Country,
+  Province,
+  Translations,
+  User,
+} from 'src/types';
+import type { Direction } from 'src/constants';
 
 // Backend barcha javoblarni { data: ... } ichiga o'raydi
 type Wrapped<T> = { data: T };
 
+// Fon so'rovlari (qidiruv, avto-to'ldirish) uchun global "Yuklanmoqda..." ko'rsatilmaydi
+const silent = { skipLoading: true } as const;
+
 // ─── Auth ────────────────────────────────────────────────────────────────────
+// Token javob body'sida emas, `x-auth-token` header'ida keladi (body: true)
 export const apiLogin = (email: string, password: string) =>
-  axios.post<Wrapped<User>>('auth', { email, password });
+  axios.post<boolean>('auth', { email, password });
 
 // ─── Users ───────────────────────────────────────────────────────────────────
 export const apiGetMe = () => axios.get<Wrapped<User>>('users/me');
 
-export const apiCreateUser = (data: { name: string; email: string; password: string; isAdmin?: boolean }) =>
+// Faqat admin
+export const apiGetUsers = () => axios.get<Wrapped<User[]>>('users');
+
+export const apiCreateUser = (data: { name: string; email: string; password: string }) =>
   axios.post<Wrapped<User>>('users', data);
 
 // ─── Advertisements ──────────────────────────────────────────────────────────
-export const apiGetAds = (params?: { page?: number; perPage?: number }) =>
+export interface AdsQuery {
+  page?: number | undefined;
+  perPage?: number | undefined;
+  direction?: Direction | undefined;
+}
+
+export const apiGetAds = (params?: AdsQuery) =>
   axios.get<Wrapped<Advertisement[]>>('advertisements', { params });
 
-export const apiGetMyAds = () =>
-  axios.get<Wrapped<Advertisement[]>>('advertisements/my');
+export const apiGetMyAds = () => axios.get<Wrapped<Advertisement[]>>('advertisements/my');
 
-export const apiGetAd = (id: string) =>
-  axios.get<Wrapped<Advertisement>>(`advertisements/${id}`);
+export const apiGetAd = (id: string) => axios.get<Wrapped<Advertisement>>(`advertisements/${id}`);
 
 export const apiCreateAd = (data: AdCreateDto) =>
   axios.post<Wrapped<Advertisement>>('advertisements', data);
 
-export const apiUpdateAd = (id: string, data: Record<string, unknown>) =>
+export const apiUpdateAd = (id: string, data: AdUpdateDto) =>
   axios.put<Wrapped<Advertisement>>(`advertisements/${id}`, data);
 
 export const apiDeleteAd = (id: string) =>
   axios.delete<Wrapped<{ _id: string; deleted: boolean }>>(`advertisements/${id}`);
 
 // ─── Countries ───────────────────────────────────────────────────────────────
-export const apiGetCountries = (params?: { region?: string; subregion?: string; q?: string; limit?: number; offset?: number }) =>
-  axios.get<Wrapped<Country[]>>('countries', {
-    params,
-    headers: { 'X-Skip-Loading': '1' },
-  });
+export interface CountriesQuery {
+  region?: string | undefined;
+  subregion?: string | undefined;
+  q?: string | undefined;
+  limit?: number | undefined;
+  offset?: number | undefined;
+}
+
+export const apiGetCountries = (params?: CountriesQuery) =>
+  axios.get<Wrapped<Country[]>>('countries', { params, ...silent });
+
+// To'liq hujjat (ro'yxat faqat qisqa maydonlarni qaytaradi)
+export const apiGetCountry = (id: number) =>
+  axios.get<Wrapped<Country>>(`countries/${id}`, silent);
 
 // ─── Provinces ───────────────────────────────────────────────────────────────
 export const apiGetProvincesByCountry = (countryId: number) =>
-  axios.get<Wrapped<Province[]>>(`province/country/${countryId}`, {
-    headers: { 'X-Skip-Loading': '1' },
-  });
+  axios.get<Wrapped<Province[]>>(`province/country/${countryId}`, silent);
 
 // ─── Cities ──────────────────────────────────────────────────────────────────
-export const apiGetCities = (params: { name?: string; country_id?: number; state_id?: number }) =>
-  axios.get<Wrapped<City[]>>('cities', {
-    params,
-    headers: { 'X-Skip-Loading': '1' },
-  });
+export interface CitiesQuery {
+  name?: string | undefined;
+  country_id?: number | undefined;
+  state_id?: number | undefined;
+}
+
+export const apiGetCities = (params: CitiesQuery) =>
+  axios.get<Wrapped<City[]>>('cities', { params, ...silent });
 
 // ─── Admin: Countries ────────────────────────────────────────────────────────
-export const apiAdminCreateCountry = (data: Record<string, unknown>) =>
+export interface CountryPayload {
+  id?: number | null | undefined;
+  name: string;
+  iso2: string;
+  iso3: string;
+  region: string;
+  subregion: string;
+  emoji: string;
+  translations: Record<string, string>;
+}
+
+export const apiAdminCreateCountry = (data: CountryPayload) =>
   axios.post<Wrapped<Country>>('countries', data);
 
-export const apiAdminUpdateCountry = (id: number, data: Record<string, unknown>) =>
+export const apiAdminUpdateCountry = (id: number, data: Partial<CountryPayload>) =>
   axios.put<Wrapped<Country>>(`countries/${id}`, data);
 
-export const apiAdminDeleteCountry = (id: number) =>
-  axios.delete(`countries/${id}`);
+export const apiAdminDeleteCountry = (id: number) => axios.delete(`countries/${id}`);
 
 // ─── Admin: Provinces ─────────────────────────────────────────────────────────
-export const apiAdminCreateProvince = (data: Record<string, unknown>) =>
+export interface ProvincePayload {
+  id?: number | null | undefined;
+  name: string;
+  country_id: number | null;
+  country_code: string;
+  country_name: string;
+  state_code: string;
+  translations: Translations;
+}
+
+export const apiAdminCreateProvince = (data: ProvincePayload) =>
   axios.post<Wrapped<Province>>('province', data);
 
-export const apiAdminUpdateProvince = (id: string, data: Record<string, unknown>) =>
+// PUT: umumiy maydonlar + { translations: { uz, en, ru } } ('' → tarjima o'chiriladi)
+export const apiAdminUpdateProvince = (id: string, data: Partial<ProvincePayload>) =>
   axios.put<Wrapped<Province>>(`province/${id}`, data);
 
-export const apiAdminDeleteProvince = (id: string) =>
-  axios.delete(`province/${id}`);
+export const apiAdminDeleteProvince = (id: string) => axios.delete(`province/${id}`);
 
 // ─── Admin: Cities ────────────────────────────────────────────────────────────
-export const apiAdminCreateCity = (data: Record<string, unknown>) =>
+export interface CityPayload {
+  id?: number | null | undefined;
+  name: string;
+  country_id: number | null;
+  country_code: string;
+  country_name: string;
+  state_id: number | null;
+  state_code?: string | undefined;
+  state_name?: string | undefined;
+  translations: Translations;
+}
+
+export const apiAdminCreateCity = (data: CityPayload) =>
   axios.post<Wrapped<City>>('cities', data);
 
-export const apiAdminUpdateCity = (id: string, data: Record<string, unknown>) =>
+export const apiAdminUpdateCity = (id: string, data: Partial<CityPayload>) =>
   axios.put<Wrapped<City>>(`cities/${id}`, data);
 
-export const apiAdminDeleteCity = (id: string) =>
-  axios.delete(`cities/${id}`);
+export const apiAdminDeleteCity = (id: string) => axios.delete(`cities/${id}`);
 
 // ─── Locations (unified search) ──────────────────────────────────────────────
 export interface LocationResult {
   id: number;
-  label: string;  // "O'zbekiston, Toshkent" yoki "O'zbekiston, Toshkent, Chirchiq"
-  value: string;  // label bilan bir xil
+  label: string; // "O'zbekiston, Toshkent" yoki "O'zbekiston, Toshkent, Chirchiq"
+  value: string; // label bilan bir xil
   type: 'province' | 'city';
 }
 
 export const apiSearchLocations = (
   q: string,
-  direction: 'international' | 'intercity',
+  direction: Direction,
   countryId?: number,
   limit = 30,
   offset = 0,
 ) =>
   axios.get<Wrapped<LocationResult[]>>('locations', {
     params: { q, direction, country_id: countryId, limit, offset },
-    headers: { 'X-Skip-Loading': '1' },
+    ...silent,
   });

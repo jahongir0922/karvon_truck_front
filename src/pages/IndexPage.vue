@@ -1,119 +1,132 @@
 <template>
   <main>
     <!-- Filter drawer -->
-    <q-drawer v-model="drawerOpen" overlay :width="320" class="p-3" side="right" bordered>
-      <div class="flex justify-between items-center mb-3">
-        <span class="font-bold text-lg">{{ t('index.filterTitle') }}</span>
-        <q-btn flat dense icon="close" @click="drawerOpen = false" />
-      </div>
-      <div class="flex flex-col gap-3">
-        <!-- Yo'nalish -->
-        <div class="flex gap-4">
-          <q-radio v-model="direction" val="international" :label="t('ad.international')" @update:model-value="onDirectionChange" />
-          <q-radio v-model="direction" val="intercity" :label="t('ad.intercity')" @update:model-value="onDirectionChange" />
+    <q-drawer v-model="drawerOpen" overlay :width="320" side="right" bordered>
+      <div class="p-3">
+        <div class="flex justify-between items-center mb-3">
+          <span class="font-bold text-lg">{{ t('index.filterTitle') }}</span>
+          <q-btn flat dense icon="close" :aria-label="t('common.cancel')" @click="drawerOpen = false" />
         </div>
+        <div class="flex flex-col gap-3">
+          <!-- Yo'nalish -->
+          <div class="flex gap-4">
+            <q-radio
+              v-model="direction"
+              val="international"
+              :label="t('ad.international')"
+              @update:model-value="onDirectionChange"
+            />
+            <q-radio
+              v-model="direction"
+              val="intercity"
+              :label="t('ad.intercity')"
+              @update:model-value="onDirectionChange"
+            />
+          </div>
 
-        <!-- Mamlakat (faqat shaharlararo) -->
-        <q-select
-          v-if="direction === 'intercity'"
-          filled
-          v-model="countryId"
-          use-input
-          clearable
-          input-debounce="400"
-          :label="t('ad.country')"
-          :options="countryOptions"
-          option-label="label"
-          option-value="value"
-          emit-value
-          map-options
-          @filter="filterCountry"
-          @update:model-value="onCountryChange"
-          @virtual-scroll="(e) => onCountryScroll(e.to)"
-          behavior="menu"
-        >
-          <template #option="{ itemProps, opt }">
-            <q-item v-bind="itemProps">
-              <q-item-section>{{ opt.label }}</q-item-section>
-            </q-item>
-          </template>
-          <template #no-option>
-            <q-item><q-item-section class="text-grey">{{ t('common.noOption') }}</q-item-section></q-item>
-          </template>
-        </q-select>
+          <!-- Mamlakat (faqat shaharlararo) -->
+          <q-select
+            v-if="direction === 'intercity'"
+            v-model="countryId"
+            filled
+            use-input
+            clearable
+            input-debounce="400"
+            :label="t('ad.country')"
+            :options="countryOptions"
+            option-label="label"
+            option-value="value"
+            emit-value
+            map-options
+            behavior="menu"
+            @filter="filterCountry"
+            @update:model-value="onCountryChange"
+            @virtual-scroll="onCountryScroll"
+          >
+            <template #no-option>
+              <q-item>
+                <q-item-section class="text-grey">{{ t('common.noOption') }}</q-item-section>
+              </q-item>
+            </template>
+          </q-select>
 
-        <q-select
-          filled
-          v-model="filters.fromAddress"
-          use-input
-          clearable
-          input-debounce="400"
-          :label="t('ad.from')"
-          :options="fromOptions"
-          option-label="label"
-          option-value="value"
-          emit-value
-          map-options
-          @filter="filterFrom"
-          @virtual-scroll="(e) => onFromScroll(e.to)"
-          behavior="menu"
-        >
-          <template #option="{ itemProps, opt }">
-            <q-item v-bind="itemProps">
-              <q-item-section>{{ locationLabel(opt.label) }}</q-item-section>
-            </q-item>
-          </template>
-          <template #no-option>
-            <q-item><q-item-section class="text-grey">{{ t('common.noOption') }}</q-item-section></q-item>
-          </template>
-        </q-select>
+          <q-select
+            v-model="filters.fromAddress"
+            filled
+            use-input
+            clearable
+            input-debounce="400"
+            :label="t('ad.from')"
+            :options="fromOptions"
+            option-label="label"
+            option-value="value"
+            emit-value
+            map-options
+            behavior="menu"
+            @filter="filterFrom"
+            @virtual-scroll="onFromScroll"
+          >
+            <template #option="{ itemProps, opt }">
+              <q-item v-bind="itemProps">
+                <q-item-section>{{ locationLabel(opt.label) }}</q-item-section>
+              </q-item>
+            </template>
+            <template #no-option>
+              <q-item>
+                <q-item-section class="text-grey">{{ t('common.noOption') }}</q-item-section>
+              </q-item>
+            </template>
+          </q-select>
 
-        <q-select
-          filled
-          v-model="filters.toAddress"
-          use-input
-          clearable
-          input-debounce="400"
-          :label="t('ad.to')"
-          :options="toOptions"
-          option-label="label"
-          option-value="value"
-          emit-value
-          map-options
-          @filter="filterTo"
-          @virtual-scroll="(e) => onToScroll(e.to)"
-          behavior="menu"
-        >
-          <template #option="{ itemProps, opt }">
-            <q-item v-bind="itemProps">
-              <q-item-section>{{ locationLabel(opt.label) }}</q-item-section>
-            </q-item>
-          </template>
-          <template #no-option>
-            <q-item><q-item-section class="text-grey">{{ t('common.noOption') }}</q-item-section></q-item>
-          </template>
-        </q-select>
+          <q-select
+            v-model="filters.toAddress"
+            filled
+            use-input
+            clearable
+            input-debounce="400"
+            :label="t('ad.to')"
+            :options="toOptions"
+            option-label="label"
+            option-value="value"
+            emit-value
+            map-options
+            behavior="menu"
+            @filter="filterTo"
+            @virtual-scroll="onToScroll"
+          >
+            <template #option="{ itemProps, opt }">
+              <q-item v-bind="itemProps">
+                <q-item-section>{{ locationLabel(opt.label) }}</q-item-section>
+              </q-item>
+            </template>
+            <template #no-option>
+              <q-item>
+                <q-item-section class="text-grey">{{ t('common.noOption') }}</q-item-section>
+              </q-item>
+            </template>
+          </q-select>
 
-        <q-select
-          filled
-          v-model="filters.truckType"
-          clearable
-          multiple
-          use-chips
-          :label="t('ad.truckType')"
-          :options="TRUCK_TYPES"
-          behavior="menu"
-        />
-        <div class="grid grid-cols-2 gap-2">
-          <q-input v-model.number="filters.priceFrom" :label="t('index.minPrice')" type="number" />
-          <q-input v-model.number="filters.priceTo" :label="t('index.maxPrice')" type="number" />
+          <q-select
+            v-model="filters.truckType"
+            filled
+            clearable
+            multiple
+            use-chips
+            :label="t('ad.truckType')"
+            :options="TRUCK_TYPES"
+            behavior="menu"
+          />
+          <div class="grid grid-cols-2 gap-2">
+            <q-input v-model.number="filters.priceFrom" :label="t('index.minPrice')" type="number" />
+            <q-input v-model.number="filters.priceTo" :label="t('index.maxPrice')" type="number" />
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <q-input v-model.number="filters.weightFrom" :label="t('index.minWeight')" type="number" />
+            <q-input v-model.number="filters.weightTo" :label="t('index.maxWeight')" type="number" />
+          </div>
+          <q-btn color="primary" :label="t('common.apply')" @click="drawerOpen = false" />
+          <q-btn flat :label="t('common.clear')" @click="resetFilters" />
         </div>
-        <div class="grid grid-cols-2 gap-2">
-          <q-input v-model.number="filters.weightFrom" :label="t('index.minWeight')" type="number" />
-          <q-input v-model.number="filters.weightTo" :label="t('index.maxWeight')" type="number" />
-        </div>
-        <q-btn color="primary" :label="t('common.apply')" @click="drawerOpen = false" />
-        <q-btn flat :label="t('common.clear')" @click="resetFilters" />
       </div>
     </q-drawer>
 
@@ -126,7 +139,6 @@
           <q-radio v-model="direction" val="intercity" :label="t('ad.intercity')" />
         </div>
         <q-btn
-          :disabled="!direction"
           color="primary"
           :label="t('index.continue')"
           class="min-w-[150px]"
@@ -136,15 +148,68 @@
 
       <!-- Ads view -->
       <template v-else>
-        <div class="flex gap-2 mb-4 items-center flex-wrap">
+        <div class="flex gap-2 mb-3 items-center flex-wrap">
           <div class="flex gap-4">
-            <q-radio v-model="direction" val="international" :label="t('ad.international')" @update:model-value="onDirectionChange" />
-            <q-radio v-model="direction" val="intercity" :label="t('ad.intercity')" @update:model-value="onDirectionChange" />
+            <q-radio
+              v-model="direction"
+              val="international"
+              :label="t('ad.international')"
+              @update:model-value="onDirectionChange"
+            />
+            <q-radio
+              v-model="direction"
+              val="intercity"
+              :label="t('ad.intercity')"
+              @update:model-value="onDirectionChange"
+            />
           </div>
           <q-space />
-          <q-btn flat dense icon="filter_list" @click="drawerOpen = true">
-            <q-badge v-if="activeFilterCount > 0" color="negative" floating>{{ activeFilterCount }}</q-badge>
+          <q-icon
+            :name="wsConnected ? 'wifi' : 'wifi_off'"
+            :color="wsConnected ? 'positive' : 'grey'"
+            size="18px"
+          >
+            <q-tooltip>{{ wsConnected ? t('index.liveOn') : t('index.liveOff') }}</q-tooltip>
+          </q-icon>
+          <q-btn
+            flat
+            dense
+            round
+            icon="refresh"
+            :loading="loading"
+            :aria-label="t('common.refresh')"
+            @click="loadAds"
+          >
+            <q-tooltip>{{ t('common.refresh') }}</q-tooltip>
           </q-btn>
+          <q-btn
+            flat
+            dense
+            round
+            icon="filter_list"
+            :aria-label="t('index.filterTitle')"
+            @click="drawerOpen = true"
+          >
+            <q-badge v-if="activeFilterCount > 0" color="negative" floating>
+              {{ activeFilterCount }}
+            </q-badge>
+          </q-btn>
+        </div>
+
+        <q-input
+          v-model="filters.q"
+          dense
+          outlined
+          clearable
+          debounce="300"
+          :placeholder="t('index.searchPlaceholder')"
+          class="mb-2"
+        >
+          <template #prepend><q-icon name="search" /></template>
+        </q-input>
+
+        <div v-if="allAds.length" class="text-xs text-grey-6 mb-3">
+          {{ t('index.shown', { n: filteredAds.length }) }}
         </div>
 
         <div v-if="!allAds.length && !loading" class="text-center text-grey-6 py-10">
@@ -175,81 +240,27 @@
 import { ref, computed, reactive, onMounted, onUnmounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import AdsCard from 'components/AdsCard.vue';
-import { apiGetAds, apiGetCountries } from 'src/api';
+import { apiGetAds } from 'src/api';
 import { useLocationSearch } from 'src/composables/useLocationSearch';
-import { countryLabel } from 'src/composables/useAdminCountrySelect';
-import type { Advertisement, Country } from 'src/types';
+import { useCountrySelect } from 'src/composables/useCountrySelect';
+import { stripCountry } from 'src/utils/location';
+import { DIRECTION_KEY, TRUCK_TYPES, isDirection, type Direction } from 'src/constants';
+import type { Advertisement } from 'src/types';
 
-const { t, locale } = useI18n();
-
-const TRUCK_TYPES = ['Tent', 'Ref', 'Plashchaniy', 'Konteyner', 'Bortovoy', 'Samosvал'];
+const { t } = useI18n();
 
 function locationLabel(label: string) {
-  if (direction.value === 'intercity') {
-    const idx = label.indexOf(', ');
-    return idx !== -1 ? label.slice(idx + 2) : label;
-  }
-  return label;
+  return direction.value === 'intercity' ? stripCountry(label) : label;
 }
 
 // ─── Direction ────────────────────────────────────────────────────────────────
-const direction = ref<'international' | 'intercity'>(
-  (localStorage.getItem('direction') as 'international' | 'intercity') || 'intercity',
-);
-const directionChosen = ref(!!localStorage.getItem('direction'));
+const savedDirection = localStorage.getItem(DIRECTION_KEY);
+const direction = ref<Direction>(isDirection(savedDirection) ? savedDirection : 'intercity');
+const directionChosen = ref(isDirection(savedDirection));
 
 // ─── Country selector ─────────────────────────────────────────────────────────
-interface CountryOption { label: string; value: number }
-
-const COUNTRY_LIMIT = 30;
-const countryId = ref<number | null>(null);
-const countryOptions = ref<CountryOption[]>([]);
-const countryHasMore = ref(false);
-let currentCountryQuery = 'a';
-
-function toCountryOption(c: Country): CountryOption {
-  return { label: countryLabel(c, locale.value), value: c.id };
-}
-
-async function loadDefaultCountry() {
-  const res = await apiGetCountries({ q: 'uzbek', limit: COUNTRY_LIMIT });
-  const countries = res.data.data;
-  countryOptions.value = countries.map(toCountryOption);
-  countryHasMore.value = countries.length === COUNTRY_LIMIT;
-  if (countries.length && countryId.value === null) {
-    const uz = countries.find((c) => c.iso2 === 'UZ') ?? countries[0];
-    if (uz) countryId.value = uz.id;
-  }
-}
-
-function filterCountry(val: string, update: (fn: () => void) => void) {
-  currentCountryQuery = val || 'a';
-  void apiGetCountries({ q: currentCountryQuery, limit: COUNTRY_LIMIT }).then((res) => {
-    update(() => {
-      countryOptions.value = res.data.data.map(toCountryOption);
-      countryHasMore.value = res.data.data.length === COUNTRY_LIMIT;
-    });
-  });
-}
-
-async function loadMoreCountry() {
-  if (!countryHasMore.value) return;
-  const res = await apiGetCountries({ q: currentCountryQuery, limit: COUNTRY_LIMIT, offset: countryOptions.value.length });
-  const more = res.data.data.map(toCountryOption);
-  countryOptions.value = [...countryOptions.value, ...more];
-  countryHasMore.value = more.length === COUNTRY_LIMIT;
-}
-
-function onCountryScroll(to: number) {
-  if (to >= countryOptions.value.length - 3 && countryHasMore.value) void loadMoreCountry();
-}
-
-function onFromScroll(to: number) {
-  if (to >= fromOptions.value.length - 3 && fromHasMore.value) void loadMoreFrom();
-}
-function onToScroll(to: number) {
-  if (to >= toOptions.value.length - 3 && toHasMore.value) void loadMoreTo();
-}
+const { countryId, countryOptions, loadDefaultCountry, filterCountry, onCountryScroll } =
+  useCountrySelect();
 
 function onCountryChange() {
   filters.fromAddress = '';
@@ -268,26 +279,56 @@ const {
   () => (direction.value === 'intercity' && countryId.value ? countryId.value : undefined),
 );
 
+function onFromScroll(details: { to: number }) {
+  if (details.to >= fromOptions.value.length - 3 && fromHasMore.value) void loadMoreFrom();
+}
+function onToScroll(details: { to: number }) {
+  if (details.to >= toOptions.value.length - 3 && toHasMore.value) void loadMoreTo();
+}
+
+function reloadLocations() {
+  if (direction.value === 'intercity') {
+    void loadDefaultCountry().then(() => loadInitial());
+  } else {
+    void loadInitial();
+  }
+}
+
 // ─── Ads ──────────────────────────────────────────────────────────────────────
 const drawerOpen = ref(false);
 const loading = ref(false);
 const allAds = ref<Advertisement[]>([]);
 
-// Sahifalash. Filtrlar mijoz tomonida ishlaydi, shuning uchun "ko'proq yuklash"
-// ko'proq xom e'lon oladi va filtr ular ustidan qayta hisoblanadi.
+// Sahifalash. Yo'nalish serverda filtrlanadi, qolgan filtrlar mijoz tomonida —
+// "ko'proq yuklash" ko'proq xom e'lon oladi va filtr ular ustidan qayta hisoblanadi.
 const PER_PAGE = 50;
 const page = ref(1);
 const hasMore = ref(false);
 const loadingMore = ref(false);
+// Yo'nalish tez almashtirilganda eski javob yangisini bosib qo'ymasin
+let loadSeq = 0;
 
-const filters = reactive({
+// clearable q-input/q-select tozalanganda null beradi — shuning uchun `| null`
+interface Filters {
+  q: string | null;
+  fromAddress: string | null;
+  toAddress: string | null;
+  truckType: string[] | null;
+  priceFrom: number | null;
+  priceTo: number | null;
+  weightFrom: number | null;
+  weightTo: number | null;
+}
+
+const filters = reactive<Filters>({
+  q: '',
   fromAddress: '',
   toAddress: '',
-  truckType: [] as string[],
-  priceFrom: null as number | null,
-  priceTo: null as number | null,
-  weightFrom: null as number | null,
-  weightTo: null as number | null,
+  truckType: [],
+  priceFrom: null,
+  priceTo: null,
+  weightFrom: null,
+  weightTo: null,
 });
 
 // ─── Computed ─────────────────────────────────────────────────────────────────
@@ -295,63 +336,83 @@ const activeFilterCount = computed(() => {
   let n = 0;
   if (filters.fromAddress) n++;
   if (filters.toAddress) n++;
-  if (filters.truckType.length) n++;
-  if (filters.priceFrom !== null) n++;
-  if (filters.priceTo !== null) n++;
-  if (filters.weightFrom !== null) n++;
-  if (filters.weightTo !== null) n++;
+  if (filters.truckType?.length) n++;
+  if (typeof filters.priceFrom === 'number') n++;
+  if (typeof filters.priceTo === 'number') n++;
+  if (typeof filters.weightFrom === 'number') n++;
+  if (typeof filters.weightTo === 'number') n++;
   return n;
 });
 
-const filteredAds = computed(() =>
-  allAds.value.filter((ad) => {
+function matchesText(ad: Advertisement, q: string): boolean {
+  const haystack = [
+    ad.fromAddress,
+    ad.toAddress,
+    ad.loadName,
+    ad.descriptions,
+    ad.clientName,
+    ad.paymentType,
+    ...(ad.truckType ?? []),
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+  return haystack.includes(q);
+}
+
+const filteredAds = computed(() => {
+  const q = (filters.q ?? '').trim().toLowerCase();
+  const from = (filters.fromAddress ?? '').toLowerCase();
+  const to = (filters.toAddress ?? '').toLowerCase();
+  const trucks = filters.truckType ?? [];
+
+  return allAds.value.filter((ad) => {
     if (ad.direction !== direction.value) return false;
-    if (filters.fromAddress && !ad.fromAddress.toLowerCase().includes(filters.fromAddress.toLowerCase())) return false;
-    if (filters.toAddress && !ad.toAddress.toLowerCase().includes(filters.toAddress.toLowerCase())) return false;
-    if (filters.truckType.length && !filters.truckType.some((t) => ad.truckType?.includes(t))) return false;
+    if (q && !matchesText(ad, q)) return false;
+    if (from && !ad.fromAddress.toLowerCase().includes(from)) return false;
+    if (to && !ad.toAddress.toLowerCase().includes(to)) return false;
+    if (trucks.length && !trucks.some((type) => ad.truckType?.includes(type))) return false;
     const cost = Number(ad.deliveryCost);
-    if (filters.priceFrom !== null && cost < filters.priceFrom) return false;
-    if (filters.priceTo !== null && cost > filters.priceTo) return false;
+    if (typeof filters.priceFrom === 'number' && cost < filters.priceFrom) return false;
+    if (typeof filters.priceTo === 'number' && cost > filters.priceTo) return false;
     const w = Number(ad.weight);
-    if (filters.weightFrom !== null && w < filters.weightFrom) return false;
-    if (filters.weightTo !== null && w > filters.weightTo) return false;
+    if (typeof filters.weightFrom === 'number' && w < filters.weightFrom) return false;
+    if (typeof filters.weightTo === 'number' && w > filters.weightTo) return false;
     return true;
-  }),
-);
+  });
+});
 
 // ─── Methods ──────────────────────────────────────────────────────────────────
 function confirmDirection() {
-  localStorage.setItem('direction', direction.value);
+  localStorage.setItem(DIRECTION_KEY, direction.value);
   directionChosen.value = true;
   void loadAds();
-  if (direction.value === 'intercity') {
-    void loadDefaultCountry().then(() => loadInitial());
-  } else {
-    void loadInitial();
-  }
+  reloadLocations();
 }
 
 function onDirectionChange() {
-  localStorage.setItem('direction', direction.value);
+  localStorage.setItem(DIRECTION_KEY, direction.value);
   countryId.value = null;
   resetFilters();
   void loadAds();
-  if (direction.value === 'intercity') {
-    void loadDefaultCountry().then(() => loadInitial());
-  } else {
-    void loadInitial();
-  }
+  reloadLocations();
 }
 
 async function loadAds() {
+  const seq = ++loadSeq;
   loading.value = true;
   page.value = 1;
   try {
-    const res = await apiGetAds({ page: 1, perPage: PER_PAGE });
+    const res = await apiGetAds({ page: 1, perPage: PER_PAGE, direction: direction.value });
+    if (seq !== loadSeq) return; // eskirgan javob
     allAds.value = res.data.data;
     hasMore.value = res.data.data.length === PER_PAGE;
+    needsReload = false;
+  } catch {
+    // Tarmoq/server xatosini interceptor ko'rsatadi
+    needsReload = true;
   } finally {
-    loading.value = false;
+    if (seq === loadSeq) loading.value = false;
   }
 }
 
@@ -360,19 +421,22 @@ async function loadMoreAds() {
   loadingMore.value = true;
   try {
     const next = page.value + 1;
-    const res = await apiGetAds({ page: next, perPage: PER_PAGE });
+    const res = await apiGetAds({ page: next, perPage: PER_PAGE, direction: direction.value });
     const incoming = res.data.data;
     // WebSocket orqali allaqachon tushganlarini takrorlamaymiz
     const fresh = incoming.filter((a) => !allAds.value.some((x) => x._id === a._id));
     allAds.value = [...allAds.value, ...fresh];
     page.value = next;
     hasMore.value = incoming.length === PER_PAGE;
+  } catch {
+    // interceptor ko'rsatadi
   } finally {
     loadingMore.value = false;
   }
 }
 
 function resetFilters() {
+  filters.q = '';
   filters.fromAddress = '';
   filters.toAddress = '';
   filters.truckType = [];
@@ -390,9 +454,15 @@ interface AdSocketMessage {
   operation?: string;
 }
 
+const RECONNECT_MS = 5000;
+const wsConnected = ref(false);
 let ws: WebSocket | null = null;
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 let disposed = false;
+let everConnected = false;
+// REST yuklash muvaffaqiyatsiz bo'lgan bo'lsa (masalan, backend hali uyg'onmagan),
+// socket ulanishi bilan ro'yxatni qayta so'raymiz
+let needsReload = false;
 
 function removeAd(id: string) {
   const idx = allAds.value.findIndex((x) => x._id === id);
@@ -410,35 +480,64 @@ function upsertAd(ad: Advertisement) {
   else allAds.value.unshift(ad);
 }
 
+function handleSocketMessage(msg: AdSocketMessage) {
+  if (msg.type === 'initial_ads') {
+    const incoming = Array.isArray(msg.data) ? msg.data : [];
+    const newAds = incoming.filter((a) => !allAds.value.some((x) => x._id === a._id));
+    allAds.value = [...newAds, ...allAds.value];
+    return;
+  }
+
+  if (msg.type === 'ad_change') {
+    // O'chirishda serverda fullDocument bo'lmaydi — id documentKey'dan olinadi
+    if (msg.operation === 'delete') {
+      if (msg.documentKey?._id) removeAd(String(msg.documentKey._id));
+      return;
+    }
+    if (msg.data && !Array.isArray(msg.data)) upsertAd(msg.data);
+  }
+}
+
+function scheduleReconnect() {
+  if (disposed || reconnectTimer) return;
+  reconnectTimer = setTimeout(() => {
+    reconnectTimer = null;
+    setupWebSocket();
+  }, RECONNECT_MS);
+}
+
 function setupWebSocket() {
   if (disposed) return;
   const wsUrl = (process.env.WS_URL || 'ws://localhost:5000/ws/') + 'ads';
-  ws = new WebSocket(wsUrl);
+  try {
+    ws = new WebSocket(wsUrl);
+  } catch {
+    scheduleReconnect();
+    return;
+  }
+
+  ws.onopen = () => {
+    wsConnected.value = true;
+    // Uzilib turgan paytda o'tkazib yuborilgan o'zgarishlarni, yoki backend
+    // kech uyg'ongani uchun yuklanmay qolgan ro'yxatni qayta olamiz
+    if (directionChosen.value && (everConnected || needsReload)) void loadAds();
+    everConnected = true;
+  };
 
   ws.onmessage = (event) => {
-    const msg = JSON.parse(event.data as string) as AdSocketMessage;
-
-    if (msg.type === 'initial_ads') {
-      const incoming = (msg.data as Advertisement[]) ?? [];
-      const newAds = incoming.filter((a) => !allAds.value.some((x) => x._id === a._id));
-      allAds.value = [...newAds, ...allAds.value];
-      return;
+    let msg: AdSocketMessage;
+    try {
+      msg = JSON.parse(String(event.data)) as AdSocketMessage;
+    } catch {
+      return; // buzilgan xabar — e'tiborsiz
     }
-
-    if (msg.type === 'ad_change') {
-      // O'chirishda serverda fullDocument bo'lmaydi — id documentKey'dan olinadi
-      if (msg.operation === 'delete') {
-        if (msg.documentKey?._id) removeAd(String(msg.documentKey._id));
-        return;
-      }
-      if (msg.data) upsertAd(msg.data as Advertisement);
-    }
+    handleSocketMessage(msg);
   };
 
   // Uzilganda qayta ulanamiz, lekin sahifa yopilgandan keyin emas
   ws.onclose = () => {
-    if (disposed) return;
-    reconnectTimer = setTimeout(setupWebSocket, 5000);
+    wsConnected.value = false;
+    scheduleReconnect();
   };
 }
 
@@ -451,6 +550,7 @@ function teardownWebSocket() {
     reconnectTimer = null;
   }
   if (ws) {
+    ws.onopen = null;
     ws.onclose = null;
     ws.onmessage = null;
     ws.close();
@@ -462,11 +562,7 @@ function teardownWebSocket() {
 onMounted(() => {
   if (directionChosen.value) {
     void loadAds();
-    if (direction.value === 'intercity') {
-      void loadDefaultCountry().then(() => loadInitial());
-    } else {
-      void loadInitial();
-    }
+    reloadLocations();
   }
   setupWebSocket();
 });

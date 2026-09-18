@@ -2,17 +2,35 @@
   <q-form ref="formRef" class="flex flex-col p-3 gap-3 max-w-[800px] mx-auto" @submit.prevent="submitAd">
     <div class="text-lg font-bold">{{ t('ad.newAd') }}</div>
 
+    <q-banner v-if="!auth.isLoggedIn" dense rounded class="bg-blue-1 text-grey-9">
+      <template #avatar><q-icon name="info" color="primary" /></template>
+      {{ t('ad.loginHint') }}
+      <template #action>
+        <q-btn flat color="primary" :label="t('nav.login')" :to="{ path: '/login', query: { redirect: '/create-ads' } }" />
+      </template>
+    </q-banner>
+
     <!-- Yo'nalish -->
     <div class="flex gap-4">
-      <q-radio v-model="form.direction" val="international" :label="t('ad.international')" @update:model-value="onDirectionChange" />
-      <q-radio v-model="form.direction" val="intercity" :label="t('ad.intercity')" @update:model-value="onDirectionChange" />
+      <q-radio
+        v-model="form.direction"
+        val="international"
+        :label="t('ad.international')"
+        @update:model-value="onDirectionChange"
+      />
+      <q-radio
+        v-model="form.direction"
+        val="intercity"
+        :label="t('ad.intercity')"
+        @update:model-value="onDirectionChange"
+      />
     </div>
 
     <!-- Mamlakat (faqat shaharlararo) -->
     <q-select
       v-if="form.direction === 'intercity'"
+      v-model="countryId"
       filled
-      v-model="form.countryId"
       use-input
       clearable
       input-debounce="400"
@@ -22,26 +40,23 @@
       option-value="value"
       emit-value
       map-options
+      behavior="menu"
       @filter="filterCountry"
       @update:model-value="onCountryChange"
-      @virtual-scroll="(e) => onCountryScroll(e.to)"
-      behavior="menu"
+      @virtual-scroll="onCountryScroll"
     >
-      <template #option="{ itemProps, opt }">
-        <q-item v-bind="itemProps">
-          <q-item-section>{{ opt.label }}</q-item-section>
-        </q-item>
-      </template>
       <template #no-option>
-        <q-item><q-item-section class="text-grey">{{ t('common.noOption') }}</q-item-section></q-item>
+        <q-item>
+          <q-item-section class="text-grey">{{ t('common.noOption') }}</q-item-section>
+        </q-item>
       </template>
     </q-select>
 
     <section class="grid sm:grid-cols-2 gap-3">
       <!-- Qayerdan -->
       <q-select
-        filled
         v-model="form.fromAddress"
+        filled
         use-input
         clearable
         input-debounce="400"
@@ -51,14 +66,14 @@
         option-value="value"
         emit-value
         map-options
-        @filter="filterFrom"
-        @virtual-scroll="(e) => onFromScroll(e.to)"
         behavior="menu"
         :rules="[
           (v) => !!v || t('common.required'),
           (v) => !v || v.length >= 2 || t('common.minChars', { n: 2 }),
         ]"
         lazy-rules
+        @filter="filterFrom"
+        @virtual-scroll="onFromScroll"
       >
         <template #option="{ itemProps, opt }">
           <q-item v-bind="itemProps">
@@ -66,14 +81,16 @@
           </q-item>
         </template>
         <template #no-option>
-          <q-item><q-item-section class="text-grey">{{ t('common.noOption') }}</q-item-section></q-item>
+          <q-item>
+            <q-item-section class="text-grey">{{ t('common.noOption') }}</q-item-section>
+          </q-item>
         </template>
       </q-select>
 
       <!-- Qayerga -->
       <q-select
-        filled
         v-model="form.toAddress"
+        filled
         use-input
         clearable
         input-debounce="400"
@@ -83,14 +100,14 @@
         option-value="value"
         emit-value
         map-options
-        @filter="filterTo"
-        @virtual-scroll="(e) => onToScroll(e.to)"
         behavior="menu"
         :rules="[
           (v) => !!v || t('common.required'),
           (v) => !v || v.length >= 2 || t('common.minChars', { n: 2 }),
         ]"
         lazy-rules
+        @filter="filterTo"
+        @virtual-scroll="onToScroll"
       >
         <template #option="{ itemProps, opt }">
           <q-item v-bind="itemProps">
@@ -98,14 +115,16 @@
           </q-item>
         </template>
         <template #no-option>
-          <q-item><q-item-section class="text-grey">{{ t('common.noOption') }}</q-item-section></q-item>
+          <q-item>
+            <q-item-section class="text-grey">{{ t('common.noOption') }}</q-item-section>
+          </q-item>
         </template>
       </q-select>
 
       <!-- Mashina turi -->
       <q-select
-        filled
         v-model="form.truckType"
+        filled
         clearable
         multiple
         use-chips
@@ -125,8 +144,8 @@
 
       <!-- Yuk nomi -->
       <q-input
-        filled
         v-model="form.loadName"
+        filled
         :label="t('ad.cargoName')"
         :rules="[
           (v) => !v || v.length >= 2 || t('common.minChars', { n: 2 }),
@@ -137,20 +156,22 @@
 
       <!-- Yuk tavsifi -->
       <q-input
-        filled
         v-model="form.descriptions"
+        filled
         :label="t('ad.cargoDesc')"
         type="textarea"
         rows="2"
         class="sm:col-span-2"
+        counter
+        maxlength="500"
         :rules="[(v) => !v || v.length <= 500 || t('common.maxChars', { n: 500 })]"
         lazy-rules
       />
 
       <!-- To'lov turi -->
       <q-select
-        filled
         v-model="form.paymentType"
+        filled
         :label="t('ad.paymentType')"
         clearable
         :options="PAYMENT_TYPES"
@@ -160,28 +181,26 @@
       <!-- Avans + Narx + Valyuta -->
       <div class="flex gap-2 items-start">
         <q-input
+          v-model="form.advance"
           class="flex-1"
           filled
-          v-model="form.advance"
+          inputmode="decimal"
           :label="t('ad.advance')"
-          :rules="[
-            (v) => !v || /^\d{1,16}(\.\d{1,4})?$/.test(v) || t('common.onlyNumber'),
-          ]"
+          :rules="[(v) => !v || MONEY_RE.test(v) || t('common.onlyNumber')]"
           lazy-rules
         />
         <q-input
+          v-model="form.deliveryCost"
           class="flex-1"
           filled
-          v-model="form.deliveryCost"
+          inputmode="decimal"
           :label="t('ad.price')"
-          :rules="[
-            (v) => !v || /^\d{1,16}(\.\d{1,4})?$/.test(v) || t('common.onlyNumber'),
-          ]"
+          :rules="[(v) => !v || MONEY_RE.test(v) || t('common.onlyNumber')]"
           lazy-rules
         />
         <q-select
-          filled
           v-model="form.currency"
+          filled
           :options="CURRENCIES"
           behavior="menu"
           style="min-width: 80px"
@@ -190,8 +209,8 @@
 
       <!-- Hajm va vazn -->
       <q-input
-        filled
         v-model.number="form.volume"
+        filled
         :label="t('ad.volume')"
         type="number"
         :rules="[
@@ -201,8 +220,8 @@
         lazy-rules
       />
       <q-input
-        filled
         v-model.number="form.weight"
+        filled
         :label="t('ad.weight')"
         type="number"
         :rules="[
@@ -213,12 +232,13 @@
       />
 
       <!-- Yuklash vaqti -->
-      <q-input filled v-model="form.loadingTime" :label="t('ad.loadingTime')" type="date" />
+      <q-input v-model="form.loadingTime" filled :label="t('ad.loadingTime')" type="date" />
 
       <!-- Telefon -->
       <q-input
-        filled
         v-model="form.phone"
+        filled
+        type="tel"
         :label="t('ad.phoneRequired')"
         :rules="[
           (v) => !!v || t('common.required'),
@@ -230,8 +250,8 @@
 
       <!-- Mijoz ismi -->
       <q-input
-        filled
         v-model="form.clientName"
+        filled
         :label="t('ad.contactName')"
         :rules="[
           (v) => !v || v.length >= 2 || t('common.minChars', { n: 2 }),
@@ -254,36 +274,39 @@
 import { ref, reactive, onMounted } from 'vue';
 import { useQuasar, QForm } from 'quasar';
 import { useI18n } from 'vue-i18n';
-import { apiCreateAd, apiGetCountries } from 'src/api';
+import { apiCreateAd } from 'src/api';
+import { useAuthStore } from 'stores/auth';
 import { useLocationSearch } from 'src/composables/useLocationSearch';
-import { countryLabel } from 'src/composables/useAdminCountrySelect';
-import type { Country } from 'src/types';
+import { useCountrySelect } from 'src/composables/useCountrySelect';
+import { stripCountry } from 'src/utils/location';
+import { getErrorMessage } from 'src/utils/error';
+import {
+  CREATE_AD_DIRECTION_KEY,
+  CURRENCIES,
+  PAYMENT_TYPES,
+  TRUCK_TYPES,
+  isDirection,
+  type Direction,
+} from 'src/constants';
 
 const $q = useQuasar();
-const { t, locale } = useI18n();
+const { t } = useI18n();
+const auth = useAuthStore();
 
-const TRUCK_TYPES = ['Tent', 'Ref', 'Plashchaniy', 'Konteyner', 'Bortovoy', 'Samosvал'];
-const PAYMENT_TYPES = ['Naqd', "Pul o'tkazish"];
-const CURRENCIES = ['UZS', 'USD', 'RUB'];
+const MONEY_RE = /^\d{1,16}(\.\d{1,4})?$/;
 
 const formRef = ref<QForm | null>(null);
 const loading = ref(false);
 const errorMsg = ref('');
 
-interface CountryOption {
-  label: string;
-  value: number;
-}
-
 interface AdForm {
-  direction: 'international' | 'intercity';
-  countryId: number | null;
+  direction: Direction;
   fromAddress: string;
   toAddress: string;
-  truckType: string[];
+  truckType: string[] | null;
   loadName: string;
   descriptions: string;
-  paymentType: string;
+  paymentType: string | null;
   advance: string;
   deliveryCost: string;
   currency: string;
@@ -294,77 +317,40 @@ interface AdForm {
   clientName: string;
 }
 
-const savedDirection = (localStorage.getItem('createAd_direction') as AdForm['direction'] | null) ?? 'intercity';
+function savedDirection(): Direction {
+  const saved = localStorage.getItem(CREATE_AD_DIRECTION_KEY);
+  return isDirection(saved) ? saved : 'intercity';
+}
+
+function emptyForm(): AdForm {
+  return {
+    direction: savedDirection(),
+    fromAddress: '',
+    toAddress: '',
+    truckType: [],
+    loadName: '',
+    descriptions: '',
+    paymentType: '',
+    advance: '',
+    deliveryCost: '',
+    currency: 'UZS',
+    volume: null,
+    weight: null,
+    loadingTime: '',
+    phone: '',
+    clientName: '',
+  };
+}
+
+const form = reactive<AdForm>(emptyForm());
 
 function locationLabel(label: string) {
-  if (form.direction === 'intercity') {
-    const idx = label.indexOf(', ');
-    return idx !== -1 ? label.slice(idx + 2) : label;
-  }
-  return label;
+  return form.direction === 'intercity' ? stripCountry(label) : label;
 }
-
-const form = reactive<AdForm>({
-  direction: savedDirection,
-  countryId: null,
-  fromAddress: '',
-  toAddress: '',
-  truckType: [],
-  loadName: '',
-  descriptions: '',
-  paymentType: '',
-  advance: '',
-  deliveryCost: '',
-  currency: 'UZS',
-  volume: null,
-  weight: null,
-  loadingTime: '',
-  phone: '',
-  clientName: '',
-});
 
 // ─── Country selector ──────────────────────────────────────────────────────────
-const COUNTRY_LIMIT = 30;
-const countryOptions = ref<CountryOption[]>([]);
-const countryHasMore = ref(false);
-let currentCountryQuery = 'a';
-
-function toCountryOption(c: Country): CountryOption {
-  return { label: countryLabel(c, locale.value), value: c.id };
-}
-
-async function loadDefaultCountry() {
-  const res = await apiGetCountries({ q: 'uzbek', limit: COUNTRY_LIMIT });
-  const countries = res.data.data;
-  countryOptions.value = countries.map(toCountryOption);
-  countryHasMore.value = countries.length === COUNTRY_LIMIT;
-  if (countries.length && form.countryId === null) {
-    const uz = countries.find((c) => c.iso2 === 'UZ') ?? countries[0];
-    if (uz) form.countryId = uz.id;
-  }
-}
-
-function filterCountry(val: string, update: (fn: () => void) => void) {
-  currentCountryQuery = val || 'a';
-  void apiGetCountries({ q: currentCountryQuery, limit: COUNTRY_LIMIT }).then((res) => {
-    update(() => {
-      countryOptions.value = res.data.data.map(toCountryOption);
-      countryHasMore.value = res.data.data.length === COUNTRY_LIMIT;
-    });
-  });
-}
-
-async function loadMoreCountry() {
-  if (!countryHasMore.value) return;
-  const res = await apiGetCountries({ q: currentCountryQuery, limit: COUNTRY_LIMIT, offset: countryOptions.value.length });
-  const more = res.data.data.map(toCountryOption);
-  countryOptions.value = [...countryOptions.value, ...more];
-  countryHasMore.value = more.length === COUNTRY_LIMIT;
-}
-
-function onCountryScroll(to: number) {
-  if (to >= countryOptions.value.length - 3 && countryHasMore.value) void loadMoreCountry();
-}
+const { countryId, countryOptions, loadDefaultCountry, filterCountry, onCountryScroll } =
+  useCountrySelect();
 
 // ─── Location search ───────────────────────────────────────────────────────────
 const {
@@ -375,14 +361,22 @@ const {
   clearOptions,
 } = useLocationSearch(
   () => form.direction,
-  () => (form.direction === 'intercity' && form.countryId ? form.countryId : undefined),
+  () => (form.direction === 'intercity' && countryId.value ? countryId.value : undefined),
 );
 
-function onFromScroll(to: number) {
-  if (to >= fromOptions.value.length - 3 && fromHasMore.value) void loadMoreFrom();
+function onFromScroll(details: { to: number }) {
+  if (details.to >= fromOptions.value.length - 3 && fromHasMore.value) void loadMoreFrom();
 }
-function onToScroll(to: number) {
-  if (to >= toOptions.value.length - 3 && toHasMore.value) void loadMoreTo();
+function onToScroll(details: { to: number }) {
+  if (details.to >= toOptions.value.length - 3 && toHasMore.value) void loadMoreTo();
+}
+
+function reloadLocations() {
+  if (form.direction === 'intercity') {
+    void loadDefaultCountry().then(() => loadInitial());
+  } else {
+    void loadInitial();
+  }
 }
 
 function onCountryChange() {
@@ -392,28 +386,21 @@ function onCountryChange() {
 }
 
 function onDirectionChange() {
-  localStorage.setItem('createAd_direction', form.direction);
+  localStorage.setItem(CREATE_AD_DIRECTION_KEY, form.direction);
   form.fromAddress = '';
   form.toAddress = '';
-  form.countryId = null;
-  if (form.direction === 'intercity') {
-    void loadDefaultCountry().then(() => loadInitial());
-  } else {
-    void loadInitial();
-  }
+  countryId.value = null;
+  reloadLocations();
 }
 
+// Tozalashda foydalanuvchi tanlagan yo'nalish saqlanib qoladi
 function resetForm() {
-  Object.assign(form, {
-    direction: 'intercity', countryId: null,
-    fromAddress: '', toAddress: '', truckType: [],
-    loadName: '', descriptions: '', paymentType: '',
-    advance: '', deliveryCost: '', currency: 'UZS',
-    volume: null, weight: null, loadingTime: '', phone: '', clientName: '',
-  });
+  Object.assign(form, emptyForm());
+  countryId.value = null;
   errorMsg.value = '';
+  formRef.value?.resetValidation();
   clearOptions();
-  void loadDefaultCountry().then(() => loadInitial());
+  reloadLocations();
 }
 
 async function submitAd() {
@@ -427,34 +414,27 @@ async function submitAd() {
       direction: form.direction,
       fromAddress: form.fromAddress,
       toAddress: form.toAddress,
-      truckType: form.truckType,
+      truckType: form.truckType ?? [],
       ...(form.loadName && { loadName: form.loadName }),
       ...(form.descriptions && { descriptions: form.descriptions }),
       ...(form.paymentType && { paymentType: form.paymentType }),
       ...(form.advance && { advance: form.advance }),
       ...(form.deliveryCost && { deliveryCost: form.deliveryCost }),
       ...(form.currency && { currency: form.currency }),
-      ...(form.volume !== null && { volume: form.volume }),
-      ...(form.weight !== null && { weight: form.weight }),
+      ...(typeof form.volume === 'number' && { volume: form.volume }),
+      ...(typeof form.weight === 'number' && { weight: form.weight }),
       ...(form.loadingTime && { loadingTime: form.loadingTime }),
       phone: form.phone,
       ...(form.clientName && { clientName: form.clientName }),
     });
-    $q.notify({ type: 'positive', message: t('common.saved') });
+    $q.notify({ type: 'positive', message: t('ad.created') });
     resetForm();
   } catch (err: unknown) {
-    const msg = (err as { response?: { data?: { message?: unknown } } })?.response?.data?.message;
-    errorMsg.value = Array.isArray(msg) ? msg.join(', ') : typeof msg === 'string' ? msg : t('common.error');
+    errorMsg.value = getErrorMessage(err, t('common.error'));
   } finally {
     loading.value = false;
   }
 }
 
-onMounted(() => {
-  if (form.direction === 'intercity') {
-    void loadDefaultCountry().then(() => loadInitial());
-  } else {
-    void loadInitial();
-  }
-});
+onMounted(reloadLocations);
 </script>

@@ -1,10 +1,16 @@
 import { ref } from 'vue';
 import { apiSearchLocations, type LocationResult } from 'src/api';
+import type { Direction } from 'src/constants';
 
 const LIMIT = 30;
 
+/**
+ * "Qayerdan / Qayerga" q-select'lari uchun manzil qidiruvi (viloyat + shahar),
+ * sahifalab yuklash bilan. Yo'nalish va mamlakat getter orqali o'qiladi —
+ * chaqiruvchi ularni istalgan vaqtda o'zgartirishi mumkin.
+ */
 export function useLocationSearch(
-  getDirection: () => 'international' | 'intercity',
+  getDirection: () => Direction,
   getCountryId?: () => number | undefined,
 ) {
   const fromOptions = ref<LocationResult[]>([]);
