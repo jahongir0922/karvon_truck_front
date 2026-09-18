@@ -10,7 +10,6 @@
         <q-badge :color="ad.direction === 'international' ? 'teal' : 'blue-grey'" outline>
           {{ ad.direction === 'international' ? t('ad.international') : t('ad.intercity') }}
         </q-badge>
-        <q-badge v-if="ad.isAI" color="purple">AI</q-badge>
       </div>
 
       <q-separator />
