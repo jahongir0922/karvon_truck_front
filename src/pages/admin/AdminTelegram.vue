@@ -326,6 +326,7 @@
         flat
         dense
         wrap-cells
+        class="tg-messages"
         :loading="loadingMessages"
         :no-data-label="t('telegram.noMessages')"
         :rows-per-page-label="t('common.rowsPerPage')"
@@ -350,9 +351,18 @@
         </template>
         <template #body-cell-message="{ row }">
           <q-td style="max-width: 420px">
-            <div class="whitespace-pre-line text-sm">
-              {{ row.message || (row.isMediaExsist ? `[${t('telegram.media')}]` : '') }}
-            </div>
+            <div class="whitespace-pre-line text-sm">{{ messageText(row) }}</div>
+            <q-btn
+              v-if="isLongMessage(row)"
+              flat
+              dense
+              no-caps
+              size="sm"
+              color="primary"
+              class="mt-1"
+              :label="expandedIds.has(row._id) ? t('common.showLess') : t('common.showMore')"
+              @click="toggleExpanded(row._id)"
+            />
           </q-td>
         </template>
         <template #body-cell-state="{ row }">
@@ -509,6 +519,40 @@ const chatOptions = computed(() =>
     .filter((s) => s.chatId)
     .map((s) => ({ label: s.title || s.link, value: s.chatId as string })),
 );
+
+// Uzun xabarlar jadvalda qisqartirib ko'rsatiladi, "Ko'proq" bilan ochiladi
+const PREVIEW_CHARS = 160;
+const PREVIEW_LINES = 3;
+const expandedIds = ref(new Set<string>());
+
+function fullMessageText(row: TelegramMessage): string {
+  return row.message || (row.isMediaExsist ? `[${t('telegram.media')}]` : '');
+}
+
+// Bo'sh qatorlar hisobga olinmaydi — Telegram xabarlarida ular ko'p bo'ladi
+function contentLines(text: string): string[] {
+  return text.split('\n').filter((line) => line.trim().length > 0);
+}
+
+function isLongMessage(row: TelegramMessage): boolean {
+  const text = row.message ?? '';
+  return text.length > PREVIEW_CHARS || contentLines(text).length > PREVIEW_LINES;
+}
+
+function messageText(row: TelegramMessage): string {
+  const text = fullMessageText(row);
+  if (!isLongMessage(row) || expandedIds.value.has(row._id)) return text;
+  const firstLines = contentLines(text).slice(0, PREVIEW_LINES).join('\n');
+  const preview = firstLines.length > PREVIEW_CHARS ? firstLines.slice(0, PREVIEW_CHARS) : firstLines;
+  return preview.trimEnd() + '…';
+}
+
+function toggleExpanded(id: string) {
+  const next = new Set(expandedIds.value);
+  if (next.has(id)) next.delete(id);
+  else next.add(id);
+  expandedIds.value = next;
+}
 
 const processedOptions = computed(() => [
   { label: t('telegram.filterAll'), value: 'all' },
@@ -773,3 +817,10 @@ onUnmounted(() => {
   if (loginTimer) clearInterval(loginTimer);
 });
 </script>
+
+<style scoped>
+/* Uzun xabar ochilganda vaqt, chat, yuboruvchi va holat o'rtada emas, yuqorida tursin */
+.tg-messages :deep(tbody td) {
+  vertical-align: top;
+}
+</style>

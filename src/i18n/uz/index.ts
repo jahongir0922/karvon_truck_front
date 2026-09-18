@@ -31,6 +31,8 @@ export default {
     share: "Ulashish",
     copied: "Nusxalandi",
     goHome: "Bosh sahifaga",
+    showMore: "Ko'proq",
+    showLess: "Kamroq",
   },
   nav: {
     loads: "Yuklar",

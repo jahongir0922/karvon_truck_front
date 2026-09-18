@@ -31,6 +31,8 @@ export default {
     share: "Улашиш",
     copied: "Нусхаланди",
     goHome: "Бош саҳифага",
+    showMore: "Кўпроқ",
+    showLess: "Камроқ",
   },
   nav: {
     loads: "Юклар",

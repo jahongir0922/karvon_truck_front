@@ -31,6 +31,8 @@ export default {
     share: "Поделиться",
     copied: "Скопировано",
     goHome: "На главную",
+    showMore: "Ещё",
+    showLess: "Свернуть",
   },
   nav: {
     loads: "Грузы",
