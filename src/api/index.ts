@@ -5,6 +5,7 @@ import type {
   AdUpdateDto,
   City,
   Country,
+  LocationRef,
   Province,
   TelegramLoginState,
   TelegramMessage,
@@ -40,6 +41,11 @@ export interface AdsQuery {
   page?: number | undefined;
   perPage?: number | undefined;
   direction?: Direction | undefined;
+  // Manzil filtri — serverda ID bo'yicha (shahar tanlansa faqat u, viloyat — barcha shaharlari)
+  fromProvinceId?: number | undefined;
+  fromCityId?: number | undefined;
+  toProvinceId?: number | undefined;
+  toCityId?: number | undefined;
 }
 
 export const apiGetAds = (params?: AdsQuery) =>
@@ -217,6 +223,16 @@ export interface LocationResult {
   label: string; // "O'zbekiston, Toshkent" yoki "O'zbekiston, Toshkent, Chirchiq"
   value: string; // label bilan bir xil
   type: 'province' | 'city';
+  key: string; // 'province:2540' | 'city:111' — yagona kalit
+  countryId: number;
+  provinceId: number | null;
+  cityId: number | null;
+}
+
+/** Tanlangan variantdan backend uchun ID'lar */
+export function toLocationRef(loc: LocationResult | null | undefined): LocationRef | undefined {
+  if (!loc) return undefined;
+  return { countryId: loc.countryId, provinceId: loc.provinceId, cityId: loc.cityId };
 }
 
 export const apiSearchLocations = (

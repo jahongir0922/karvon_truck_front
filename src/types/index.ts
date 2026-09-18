@@ -9,12 +9,29 @@ export interface User {
   updatedAt: string;
 }
 
+/** Manzilning bazadagi viloyat/shaharga bog'langan ko'rinishi */
+export interface AdLocationRef {
+  countryId: number;
+  provinceId: number | null;
+  cityId: number | null;
+  label: string;
+}
+
+/** Formadan tanlangan manzil ID'lari (backend shu bo'yicha bog'laydi) */
+export interface LocationRef {
+  countryId?: number | null;
+  provinceId?: number | null;
+  cityId?: number | null;
+}
+
 export interface Advertisement {
   _id: string;
   // Odatda Direction, lekin backend (Telegram/AI import) boshqa satr ham saqlashi mumkin
   direction: string;
   fromAddress: string;
   toAddress: string;
+  fromLocation?: AdLocationRef | null;
+  toLocation?: AdLocationRef | null;
   truckType: string[];
   loadName?: string;
   weight?: number;
@@ -86,6 +103,8 @@ export interface AdCreateDto {
   direction: Direction;
   fromAddress: string;
   toAddress: string;
+  fromLocation?: LocationRef | undefined;
+  toLocation?: LocationRef | undefined;
   truckType: string[];
   loadName?: string | undefined;
   weight?: number | undefined;
@@ -182,6 +201,8 @@ export interface AdUpdateDto {
   direction?: Direction;
   fromAddress?: string;
   toAddress?: string;
+  fromLocation?: LocationRef | null;
+  toLocation?: LocationRef | null;
   truckType?: string[];
   loadName?: string | null;
   weight?: number | null;

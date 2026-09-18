@@ -274,7 +274,7 @@
 import { ref, reactive, onMounted } from 'vue';
 import { useQuasar, QForm } from 'quasar';
 import { useI18n } from 'vue-i18n';
-import { apiCreateAd } from 'src/api';
+import { apiCreateAd, toLocationRef } from 'src/api';
 import { useAuthStore } from 'stores/auth';
 import { useLocationSearch } from 'src/composables/useLocationSearch';
 import { useCountrySelect } from 'src/composables/useCountrySelect';
@@ -359,6 +359,7 @@ const {
   loadInitial, filterFrom, filterTo,
   loadMoreFrom, loadMoreTo,
   clearOptions,
+  pickLocation,
 } = useLocationSearch(
   () => form.direction,
   () => (form.direction === 'intercity' && countryId.value ? countryId.value : undefined),
@@ -414,6 +415,8 @@ async function submitAd() {
       direction: form.direction,
       fromAddress: form.fromAddress,
       toAddress: form.toAddress,
+      fromLocation: toLocationRef(pickLocation(form.fromAddress)),
+      toLocation: toLocationRef(pickLocation(form.toAddress)),
       truckType: form.truckType ?? [],
       ...(form.loadName && { loadName: form.loadName }),
       ...(form.descriptions && { descriptions: form.descriptions }),

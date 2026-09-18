@@ -65,6 +65,7 @@
             behavior="menu"
             @filter="filterFrom"
             @virtual-scroll="onFromScroll"
+            @update:model-value="onLocationFilterChange"
           >
             <template #option="{ itemProps, opt }">
               <q-item v-bind="itemProps">
@@ -93,6 +94,7 @@
             behavior="menu"
             @filter="filterTo"
             @virtual-scroll="onToScroll"
+            @update:model-value="onLocationFilterChange"
           >
             <template #option="{ itemProps, opt }">
               <q-item v-bind="itemProps">
@@ -240,12 +242,12 @@
 import { ref, computed, reactive, onMounted, onUnmounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import AdsCard from 'components/AdsCard.vue';
-import { apiGetAds } from 'src/api';
+import { apiGetAds, type AdsQuery, type LocationResult } from 'src/api';
 import { useLocationSearch } from 'src/composables/useLocationSearch';
 import { useCountrySelect } from 'src/composables/useCountrySelect';
 import { stripCountry } from 'src/utils/location';
 import { DIRECTION_KEY, TRUCK_TYPES, isDirection, type Direction } from 'src/constants';
-import type { Advertisement } from 'src/types';
+import type { Advertisement, AdLocationRef } from 'src/types';
 
 const { t } = useI18n();
 
@@ -274,6 +276,7 @@ const {
   fromHasMore, toHasMore,
   loadInitial, filterFrom, filterTo,
   loadMoreFrom, loadMoreTo,
+  pickLocation,
 } = useLocationSearch(
   () => direction.value,
   () => (direction.value === 'intercity' && countryId.value ? countryId.value : undefined),
@@ -344,6 +347,41 @@ const activeFilterCount = computed(() => {
   return n;
 });
 
+// Tanlangan manzil (ID'lari bilan). Bazadagi e'lon manzili "TOSHKENT" yoki
+// "Uzbekistan, Tashkent" deb yozilgan bo'lsa ham, taqqoslash ID bo'yicha ketadi.
+const selectedFrom = computed<LocationResult | null>(() => pickLocation(filters.fromAddress));
+const selectedTo = computed<LocationResult | null>(() => pickLocation(filters.toAddress));
+
+function locationQuery(): Pick<AdsQuery, 'fromProvinceId' | 'fromCityId' | 'toProvinceId' | 'toCityId'> {
+  const q: Pick<AdsQuery, 'fromProvinceId' | 'fromCityId' | 'toProvinceId' | 'toCityId'> = {};
+  const f = selectedFrom.value;
+  const t = selectedTo.value;
+  if (f?.cityId) q.fromCityId = f.cityId;
+  else if (f?.provinceId) q.fromProvinceId = f.provinceId;
+  if (t?.cityId) q.toCityId = t.cityId;
+  else if (t?.provinceId) q.toProvinceId = t.provinceId;
+  return q;
+}
+
+// WebSocket orqali kelgan e'lonlar server filtridan o'tmagan — mijozda ham tekshiramiz
+function matchesLocation(
+  loc: AdLocationRef | null | undefined,
+  text: string,
+  selected: LocationResult | null,
+  rawFilter: string,
+): boolean {
+  if (!rawFilter) return true;
+  if (selected) {
+    if (!loc) return false;
+    return selected.cityId ? loc.cityId === selected.cityId : loc.provinceId === selected.provinceId;
+  }
+  return text.toLowerCase().includes(rawFilter.toLowerCase());
+}
+
+function onLocationFilterChange() {
+  void loadAds();
+}
+
 function matchesText(ad: Advertisement, q: string): boolean {
   const haystack = [
     ad.fromAddress,
@@ -369,8 +407,8 @@ const filteredAds = computed(() => {
   return allAds.value.filter((ad) => {
     if (ad.direction !== direction.value) return false;
     if (q && !matchesText(ad, q)) return false;
-    if (from && !ad.fromAddress.toLowerCase().includes(from)) return false;
-    if (to && !ad.toAddress.toLowerCase().includes(to)) return false;
+    if (!matchesLocation(ad.fromLocation, ad.fromAddress, selectedFrom.value, from)) return false;
+    if (!matchesLocation(ad.toLocation, ad.toAddress, selectedTo.value, to)) return false;
     if (trucks.length && !trucks.some((type) => ad.truckType?.includes(type))) return false;
     const cost = Number(ad.deliveryCost);
     if (typeof filters.priceFrom === 'number' && cost < filters.priceFrom) return false;
@@ -393,6 +431,8 @@ function confirmDirection() {
 function onDirectionChange() {
   localStorage.setItem(DIRECTION_KEY, direction.value);
   countryId.value = null;
+  filters.fromAddress = '';
+  filters.toAddress = '';
   resetFilters();
   void loadAds();
   reloadLocations();
@@ -403,7 +443,12 @@ async function loadAds() {
   loading.value = true;
   page.value = 1;
   try {
-    const res = await apiGetAds({ page: 1, perPage: PER_PAGE, direction: direction.value });
+    const res = await apiGetAds({
+      page: 1,
+      perPage: PER_PAGE,
+      direction: direction.value,
+      ...locationQuery(),
+    });
     if (seq !== loadSeq) return; // eskirgan javob
     allAds.value = res.data.data;
     hasMore.value = res.data.data.length === PER_PAGE;
@@ -421,7 +466,12 @@ async function loadMoreAds() {
   loadingMore.value = true;
   try {
     const next = page.value + 1;
-    const res = await apiGetAds({ page: next, perPage: PER_PAGE, direction: direction.value });
+    const res = await apiGetAds({
+      page: next,
+      perPage: PER_PAGE,
+      direction: direction.value,
+      ...locationQuery(),
+    });
     const incoming = res.data.data;
     // WebSocket orqali allaqachon tushganlarini takrorlamaymiz
     const fresh = incoming.filter((a) => !allAds.value.some((x) => x._id === a._id));
@@ -436,6 +486,7 @@ async function loadMoreAds() {
 }
 
 function resetFilters() {
+  const hadLocation = !!(filters.fromAddress || filters.toAddress);
   filters.q = '';
   filters.fromAddress = '';
   filters.toAddress = '';
@@ -444,6 +495,7 @@ function resetFilters() {
   filters.priceTo = null;
   filters.weightFrom = null;
   filters.weightTo = null;
+  if (hadLocation) void loadAds();
 }
 
 // ─── WebSocket ────────────────────────────────────────────────────────────────

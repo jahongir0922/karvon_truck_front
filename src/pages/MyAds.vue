@@ -273,7 +273,7 @@
 import { ref, reactive, onMounted } from 'vue';
 import { useQuasar, QForm } from 'quasar';
 import { useI18n } from 'vue-i18n';
-import { apiGetMyAds, apiUpdateAd, apiDeleteAd } from 'src/api';
+import { apiGetMyAds, apiUpdateAd, apiDeleteAd, toLocationRef } from 'src/api';
 import { useLocationSearch } from 'src/composables/useLocationSearch';
 import { useCountrySelect } from 'src/composables/useCountrySelect';
 import { stripCountry } from 'src/utils/location';
@@ -350,6 +350,7 @@ const {
   loadInitial, filterFrom, filterTo,
   loadMoreFrom, loadMoreTo,
   clearOptions,
+  pickLocation,
 } = useLocationSearch(
   () => editForm.direction,
   () => (editForm.direction === 'intercity' && countryId.value ? countryId.value : undefined),
@@ -432,10 +433,13 @@ async function saveEdit() {
 
   // Bo'sh qoldirilgan ixtiyoriy maydonlar null bilan yuboriladi — backend ularni tozalaydi.
   // (Avval ular yuborilmasdi va eski qiymat o'chirilmay qolardi.)
+  // Manzil ro'yxatdan tanlangan bo'lsa ID'lari ketadi, aks holda backend matndan aniqlaydi (null)
   const payload: AdUpdateDto = {
     direction: editForm.direction,
     fromAddress: editForm.fromAddress,
     toAddress: editForm.toAddress,
+    fromLocation: toLocationRef(pickLocation(editForm.fromAddress)) ?? null,
+    toLocation: toLocationRef(pickLocation(editForm.toAddress)) ?? null,
     truckType: editForm.truckType ?? [],
     loadName: editForm.loadName || null,
     descriptions: editForm.descriptions || null,

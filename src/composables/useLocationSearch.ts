@@ -21,9 +21,20 @@ export function useLocationSearch(
   let currentFromQuery = '';
   let currentToQuery = '';
 
+  // Ko'rilgan barcha variantlar: label → natija. q-select modelida faqat label
+  // turadi, backendga esa ID'lar kerak — shu xaritadan olinadi.
+  const seen = new Map<string, LocationResult>();
+
+  /** Tanlangan label'ga mos variant (ID'lari bilan); topilmasa null */
+  function pickLocation(label: string | null | undefined): LocationResult | null {
+    if (!label) return null;
+    return seen.get(label) ?? null;
+  }
+
   async function _fetch(q: string, offset = 0): Promise<LocationResult[]> {
     try {
       const res = await apiSearchLocations(q, getDirection(), getCountryId?.(), LIMIT, offset);
+      for (const r of res.data.data) seen.set(r.value, r);
       return res.data.data;
     } catch {
       return [];
@@ -92,5 +103,6 @@ export function useLocationSearch(
     loadMoreFrom,
     loadMoreTo,
     clearOptions,
+    pickLocation,
   };
 }
