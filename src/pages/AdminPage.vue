@@ -7,6 +7,7 @@
       <q-route-tab to="/admin/provinces" icon="map" :label="t('admin.provinces')" />
       <q-route-tab to="/admin/cities" icon="location_city" :label="t('admin.cities')" />
       <q-route-tab to="/admin/users" icon="people" :label="t('admin.users')" />
+      <q-route-tab to="/admin/telegram" icon="send" :label="t('admin.telegram')" />
     </q-tabs>
 
     <router-view />

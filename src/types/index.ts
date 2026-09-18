@@ -100,6 +100,79 @@ export interface AdCreateDto {
   clientName?: string | undefined;
 }
 
+// ─── Telegram kuzatuvi (admin) ───────────────────────────────────────────────
+export interface TelegramSource {
+  _id: string;
+  link: string;
+  title: string;
+  isActive: boolean;
+  chatId: string | null;
+  topicId: number | null;
+  lastResolvedAt: string | null;
+  resolveError: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TelegramMessage {
+  _id: string;
+  chatId: string;
+  chatTitle?: string | null;
+  sourceLink?: string | null;
+  messageId: number;
+  topicId?: number | null;
+  message: string;
+  fullName?: string | null;
+  username?: string | null;
+  userPhone?: string | null;
+  isMediaExsist?: boolean | null;
+  sentAt?: string | null;
+  isProcessed: boolean;
+  processedAt?: string | null;
+  aiAttempts?: number;
+  aiError?: string | null;
+  adsCreated?: number;
+  createdAt: string;
+}
+
+export type TelegramLoginStep =
+  | 'idle'
+  | 'sending_code'
+  | 'waiting_code'
+  | 'waiting_password'
+  | 'signing_in'
+  | 'done'
+  | 'error';
+
+export interface TelegramLoginState {
+  step: TelegramLoginStep;
+  phone: string | null;
+  error: string | null;
+  hint: string | null;
+  updatedAt: string;
+}
+
+export interface TelegramStatus {
+  configured: boolean;
+  connected: boolean;
+  // Saqlangan sessiya Telegram tomonidan bekor qilingan — qayta kirish kerak
+  sessionInvalid: boolean;
+  login: TelegramLoginState;
+  sources: { link: string; chatId: string; topicId: number | null; title: string | null }[];
+  messagesSaved: number;
+  lastMessageAt: string | null;
+  lastError: string | null;
+  startedAt: string;
+  ai: {
+    enabled: boolean;
+    model: string;
+    isProcessing: boolean;
+    processedSinceStart: number;
+    adsCreatedSinceStart: number;
+    lastError: string | null;
+  };
+}
+
 /**
  * Tahrirlash: undefined → maydon tegilmaydi, null → maydon tozalanadi
  * (backend '' ni ham null deb qabul qiladi).

@@ -6,6 +6,10 @@ import type {
   City,
   Country,
   Province,
+  TelegramLoginState,
+  TelegramMessage,
+  TelegramSource,
+  TelegramStatus,
   Translations,
   User,
 } from 'src/types';
@@ -144,6 +148,64 @@ export const apiAdminUpdateCity = (id: string, data: Partial<CityPayload>) =>
   axios.put<Wrapped<City>>(`cities/${id}`, data);
 
 export const apiAdminDeleteCity = (id: string) => axios.delete(`cities/${id}`);
+
+// ─── Admin: Telegram kuzatuvi ────────────────────────────────────────────────
+export const apiTelegramStatus = () =>
+  axios.get<Wrapped<TelegramStatus>>('telegram/status', silent);
+
+export const apiTelegramSources = () =>
+  axios.get<Wrapped<TelegramSource[]>>('telegram/sources', silent);
+
+export const apiTelegramAddSource = (data: { link: string; title?: string | undefined }) =>
+  axios.post<Wrapped<TelegramSource>>('telegram/sources', data);
+
+export const apiTelegramUpdateSource = (
+  id: string,
+  data: { isActive?: boolean | undefined; title?: string | undefined },
+) => axios.put<Wrapped<TelegramSource>>(`telegram/sources/${id}`, data);
+
+export const apiTelegramDeleteSource = (id: string) => axios.delete(`telegram/sources/${id}`);
+
+export const apiTelegramReconnect = () =>
+  axios.post<Wrapped<{ restarting: boolean }>>('telegram/reconnect');
+
+// Telegram hisobiga kirish: telefon → kod → (2FA parol)
+export const apiTelegramLoginStart = (phone: string) =>
+  axios.post<Wrapped<TelegramLoginState>>('telegram/login/start', { phone });
+
+export const apiTelegramLoginCode = (code: string) =>
+  axios.post<Wrapped<TelegramLoginState>>('telegram/login/code', { code });
+
+export const apiTelegramLoginPassword = (password: string) =>
+  axios.post<Wrapped<TelegramLoginState>>('telegram/login/password', { password });
+
+export const apiTelegramLoginCancel = () =>
+  axios.post<Wrapped<TelegramLoginState>>('telegram/login/cancel');
+
+export const apiTelegramLogout = () =>
+  axios.post<Wrapped<{ loggedOut: boolean }>>('telegram/logout');
+
+export interface TelegramMessagesQuery {
+  chatId?: string | undefined;
+  processed?: boolean | undefined;
+  page?: number | undefined;
+  perPage?: number | undefined;
+}
+
+export interface TelegramMessagesPage {
+  items: TelegramMessage[];
+  total: number;
+  page: number;
+  perPage: number;
+}
+
+export const apiTelegramMessages = (params: TelegramMessagesQuery) =>
+  axios.get<Wrapped<TelegramMessagesPage>>('telegram/messages', { params, ...silent });
+
+export const apiTelegramProcessMessage = (id: string) =>
+  axios.post<Wrapped<{ message: TelegramMessage; adsCreated: number; error: string | null }>>(
+    `telegram/messages/${id}/process`,
+  );
 
 // ─── Locations (unified search) ──────────────────────────────────────────────
 export interface LocationResult {

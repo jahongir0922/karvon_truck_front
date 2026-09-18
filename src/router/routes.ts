@@ -22,6 +22,7 @@ const routes: RouteRecordRaw[] = [
           { path: 'provinces', component: () => import('pages/admin/AdminProvinces.vue') },
           { path: 'cities', component: () => import('pages/admin/AdminCities.vue') },
           { path: 'users', component: () => import('pages/admin/AdminUsers.vue') },
+          { path: 'telegram', component: () => import('pages/admin/AdminTelegram.vue') },
         ],
       },
     ],
