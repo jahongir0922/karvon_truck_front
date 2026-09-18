@@ -169,6 +169,10 @@ export const apiTelegramDeleteSource = (id: string) => axios.delete(`telegram/so
 export const apiTelegramReconnect = () =>
   axios.post<Wrapped<{ restarting: boolean }>>('telegram/reconnect');
 
+// AI avtomatik qayta ishlashni yoqish/o'chirish
+export const apiTelegramSetAi = (enabled: boolean) =>
+  axios.put<Wrapped<TelegramStatus['ai']>>('telegram/ai', { enabled });
+
 // Telegram hisobiga kirish: telefon → kod → (2FA parol)
 export const apiTelegramLoginStart = (phone: string) =>
   axios.post<Wrapped<TelegramLoginState>>('telegram/login/start', { phone });

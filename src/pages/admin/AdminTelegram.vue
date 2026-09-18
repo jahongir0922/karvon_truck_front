@@ -58,10 +58,18 @@
         <div>
           <div class="text-grey-7">{{ t('telegram.ai') }}</div>
           <div class="font-medium flex items-center gap-1 flex-wrap">
-            <q-badge :color="status.ai.enabled ? 'positive' : 'grey'">
-              {{ status.ai.enabled ? t('telegram.aiOn') : t('telegram.aiOff') }}
-            </q-badge>
+            <q-toggle
+              :model-value="status.ai.enabled"
+              dense
+              color="positive"
+              :disable="aiToggling || !status.ai.configured"
+              :label="status.ai.enabled ? t('telegram.aiOn') : t('telegram.aiOff')"
+              @update:model-value="(v: boolean) => onAiToggle(v)"
+            />
             <span class="text-grey-7 text-xs">{{ status.ai.model }}</span>
+            <span v-if="!status.ai.configured" class="text-negative text-xs">
+              {{ t('telegram.aiNotConfigured') }}
+            </span>
           </div>
           <div class="text-xs text-grey-7">
             {{ t('telegram.aiProcessed') }}: {{ status.ai.processedSinceStart }} /
@@ -409,6 +417,17 @@
       </q-card>
     </q-dialog>
 
+    <!-- AI ni yoqishni tasdiqlash (pul sarflaydi) -->
+    <q-dialog v-model="aiEnableDialog" persistent>
+      <q-card style="max-width: 460px">
+        <q-card-section class="text-base">{{ t('telegram.aiEnableConfirm') }}</q-card-section>
+        <q-card-actions align="right">
+          <q-btn v-close-popup flat :label="t('common.cancel')" />
+          <q-btn color="positive" :label="t('telegram.enable')" :loading="aiToggling" @click="setAi(true)" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
     <!-- Telegram hisobidan chiqish -->
     <q-dialog v-model="logoutDialog" persistent>
       <q-card>
@@ -435,6 +454,7 @@ import {
   apiTelegramReconnect,
   apiTelegramMessages,
   apiTelegramProcessMessage,
+  apiTelegramSetAi,
   apiTelegramLoginStart,
   apiTelegramLoginCode,
   apiTelegramLoginPassword,
@@ -461,6 +481,33 @@ const LOGIN_POLL_MS = 3_000;
 const status = ref<TelegramStatus | null>(null);
 const loadingStatus = ref(false);
 const reconnecting = ref(false);
+
+// ── AI avtomatik qayta ishlash ──
+const aiToggling = ref(false);
+const aiEnableDialog = ref(false);
+
+function onAiToggle(enabled: boolean) {
+  // Yoqish pul sarflaydi — avval tasdiq so'raymiz; o'chirish darhol
+  if (enabled) aiEnableDialog.value = true;
+  else void setAi(false);
+}
+
+async function setAi(enabled: boolean) {
+  aiToggling.value = true;
+  try {
+    const res = await apiTelegramSetAi(enabled);
+    if (status.value) status.value = { ...status.value, ai: res.data.data };
+    aiEnableDialog.value = false;
+    $q.notify({
+      type: enabled ? 'positive' : 'info',
+      message: enabled ? t('telegram.aiEnabled') : t('telegram.aiDisabled'),
+    });
+  } catch (err) {
+    $q.notify({ type: 'negative', message: getErrorMessage(err, t('common.error')) });
+  } finally {
+    aiToggling.value = false;
+  }
+}
 
 // ── Telegram hisobiga kirish ──
 const login = computed<TelegramLoginState | null>(() => status.value?.login ?? null);

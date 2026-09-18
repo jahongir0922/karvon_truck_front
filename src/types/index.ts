@@ -165,6 +165,7 @@ export interface TelegramStatus {
   startedAt: string;
   ai: {
     enabled: boolean;
+    configured: boolean;
     model: string;
     isProcessing: boolean;
     processedSinceStart: number;
