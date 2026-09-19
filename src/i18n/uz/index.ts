@@ -131,6 +131,7 @@ export default {
     shown: "Ko'rsatilmoqda: {n} ta",
     liveOn: "Jonli yangilanish ulangan",
     liveOff: "Jonli yangilanish uzildi, qayta ulanmoqda...",
+    newAds: "{n} ta yangi e'lon",
   },
   admin: {
     title: "Admin panel",

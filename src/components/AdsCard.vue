@@ -1,6 +1,11 @@
 <template>
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-    <q-card v-for="ad in ads" :key="ad._id" class="p-4">
+    <q-card
+      v-for="ad in ads"
+      :key="ad._id"
+      class="p-4"
+      :class="{ 'ad-new': highlightIds?.has(ad._id) }"
+    >
       <div class="flex justify-center gap-1 items-center mb-1 text-center">
         <span class="font-bold text-primary">{{ ad.fromAddress }}</span>
         <q-icon class="text-primary" name="arrow_forward" />
@@ -97,7 +102,8 @@ import { useI18n } from 'vue-i18n';
 import { formatDate, formatDateTime, formatMoney } from 'src/utils/format';
 import type { Advertisement } from 'src/types';
 
-defineProps<{ ads: Advertisement[] }>();
+// highlightIds — hozirgina qo'shilgan e'lonlar: bir necha soniya ajralib turadi
+defineProps<{ ads: Advertisement[]; highlightIds?: ReadonlySet<string> }>();
 
 const $q = useQuasar();
 const { t, locale } = useI18n();
@@ -142,3 +148,21 @@ async function share(ad: Advertisement) {
   }
 }
 </script>
+
+<style scoped>
+/* Oxirgi holat oddiy kartaga teng — animatsiya tugaganda sakrash bo'lmaydi */
+.ad-new {
+  animation: ad-new-flash 4s ease-out;
+}
+@keyframes ad-new-flash {
+  0%,
+  50% {
+    outline: 2px solid var(--q-primary);
+    background-color: #e3f2fd;
+  }
+  100% {
+    outline: 2px solid transparent;
+    background-color: #fff;
+  }
+}
+</style>

@@ -218,7 +218,7 @@
           {{ t('index.noAds') }}
         </div>
 
-        <ads-card :ads="filteredAds" />
+        <ads-card :ads="filteredAds" :highlight-ids="highlightIds" />
 
         <div v-if="filteredAds.length === 0 && allAds.length > 0" class="text-center text-grey-6 py-10">
           {{ t('index.noFilteredAds') }}
@@ -234,6 +234,22 @@
           />
         </div>
       </template>
+
+      <!-- Yangi e'lonlar ro'yxatni siljitmasligi uchun o'zi qo'shilmaydi — shu tugma bilan qo'shiladi -->
+      <q-page-sticky position="top" :offset="[0, 12]">
+        <transition name="new-ads">
+          <q-btn
+            v-if="hasNewAds"
+            rounded
+            no-caps
+            color="primary"
+            icon="arrow_upward"
+            class="shadow-4"
+            :label="t('index.newAds', { n: newAdsLabel })"
+            @click="showNewAds"
+          />
+        </transition>
+      </q-page-sticky>
     </q-page>
   </main>
 </template>
@@ -310,6 +326,17 @@ const hasMore = ref(false);
 const loadingMore = ref(false);
 // Yo'nalish tez almashtirilganda eski javob yangisini bosib qo'ymasin
 let loadSeq = 0;
+
+// WebSocket'dan kelgan yangi e'lonlar ekrandagi ro'yxatni siljitmasligi uchun avval shu yerga
+// tushadi; foydalanuvchi "yangi e'lonlar" tugmasini bosganda ro'yxatga qo'shiladi.
+const MAX_PENDING = 100;
+const HIGHLIGHT_MS = 5000;
+const pendingAds = ref<Advertisement[]>([]);
+// Bufer to'lib, eskilari tashlangan — bo'shliq qolmasligi uchun tugma ro'yxatni serverdan qayta oladi
+const pendingOverflow = ref(false);
+// Tugma bosilgach qo'shilgan e'lonlar bir necha soniya ajralib turadi
+const highlightIds = ref(new Set<string>());
+let highlightTimer: ReturnType<typeof setTimeout> | null = null;
 
 // clearable q-input/q-select tozalanganda null beradi — shuning uchun `| null`
 interface Filters {
@@ -398,13 +425,14 @@ function matchesText(ad: Advertisement, q: string): boolean {
   return haystack.includes(q);
 }
 
-const filteredAds = computed(() => {
+// Joriy filtrga mos kelish sharti — ro'yxat ham, yangi e'lonlar hisobi ham shundan foydalanadi
+const adMatches = computed(() => {
   const q = (filters.q ?? '').trim().toLowerCase();
   const from = (filters.fromAddress ?? '').toLowerCase();
   const to = (filters.toAddress ?? '').toLowerCase();
   const trucks = filters.truckType ?? [];
 
-  return allAds.value.filter((ad) => {
+  return (ad: Advertisement): boolean => {
     if (ad.direction !== direction.value) return false;
     if (q && !matchesText(ad, q)) return false;
     if (!matchesLocation(ad.fromLocation, ad.fromAddress, selectedFrom.value, from)) return false;
@@ -417,8 +445,20 @@ const filteredAds = computed(() => {
     if (typeof filters.weightFrom === 'number' && w < filters.weightFrom) return false;
     if (typeof filters.weightTo === 'number' && w > filters.weightTo) return false;
     return true;
-  });
+  };
 });
+
+const filteredAds = computed(() => allAds.value.filter(adMatches.value));
+
+// Buferdagi, ro'yxatda hali yo'q va joriy filtrga mos e'lonlar
+const newAds = computed(() => {
+  const shown = new Set(allAds.value.map((a) => a._id));
+  return pendingAds.value.filter((a) => !shown.has(a._id) && adMatches.value(a));
+});
+const hasNewAds = computed(() => pendingOverflow.value || newAds.value.length > 0);
+const newAdsLabel = computed(() =>
+  pendingOverflow.value ? `${MAX_PENDING}+` : String(newAds.value.length),
+);
 
 // ─── Methods ──────────────────────────────────────────────────────────────────
 function confirmDirection() {
@@ -452,6 +492,9 @@ async function loadAds() {
     if (seq !== loadSeq) return; // eskirgan javob
     allAds.value = res.data.data;
     hasMore.value = res.data.data.length === PER_PAGE;
+    // Ro'yxat serverdan yangilandi — bufer eskirdi
+    pendingAds.value = [];
+    pendingOverflow.value = false;
     needsReload = false;
   } catch {
     // Tarmoq/server xatosini interceptor ko'rsatadi
@@ -516,9 +559,35 @@ let everConnected = false;
 // socket ulanishi bilan ro'yxatni qayta so'raymiz
 let needsReload = false;
 
+function removePending(id: string) {
+  const idx = pendingAds.value.findIndex((x) => x._id === id);
+  if (idx >= 0) pendingAds.value.splice(idx, 1);
+}
+
 function removeAd(id: string) {
   const idx = allAds.value.findIndex((x) => x._id === id);
   if (idx >= 0) allAds.value.splice(idx, 1);
+  removePending(id);
+}
+
+// Yangi e'lonni ro'yxatga emas, buferga qo'shadi — o'qilayotgan kartalar joyidan siljimasin.
+// Ekranda ko'rinadigan e'lon bo'lmasa o'quvchi ham yo'q — u to'g'ridan-to'g'ri ro'yxatga tushadi.
+function queueAd(ad: Advertisement) {
+  if (!filteredAds.value.length) {
+    removePending(ad._id);
+    allAds.value.unshift(ad);
+    return;
+  }
+  const idx = pendingAds.value.findIndex((x) => x._id === ad._id);
+  if (idx >= 0) {
+    pendingAds.value.splice(idx, 1, ad);
+    return;
+  }
+  pendingAds.value.unshift(ad);
+  if (pendingAds.value.length > MAX_PENDING) {
+    pendingAds.value.length = MAX_PENDING;
+    pendingOverflow.value = true;
+  }
 }
 
 function upsertAd(ad: Advertisement) {
@@ -528,15 +597,43 @@ function upsertAd(ad: Advertisement) {
     return;
   }
   const idx = allAds.value.findIndex((x) => x._id === ad._id);
+  // Ekrandagi e'lon tahrirlansa joyida yangilanadi — kartalar siljimaydi
   if (idx >= 0) allAds.value.splice(idx, 1, ad);
-  else allAds.value.unshift(ad);
+  else queueAd(ad);
+}
+
+function highlightNew(before: Set<string>) {
+  highlightIds.value = new Set(
+    filteredAds.value.filter((a) => !before.has(a._id)).map((a) => a._id),
+  );
+  if (highlightTimer) clearTimeout(highlightTimer);
+  highlightTimer = setTimeout(() => {
+    highlightIds.value = new Set();
+    highlightTimer = null;
+  }, HIGHLIGHT_MS);
+}
+
+// "Yangi e'lonlar" tugmasi: buferdagilarni ro'yxat boshiga qo'shadi va tepaga olib chiqadi
+async function showNewAds() {
+  const before = new Set(allAds.value.map((a) => a._id));
+  if (pendingOverflow.value) {
+    // Bufer to'lib ketgan — bo'shliq qolmasligi uchun ro'yxatni serverdan qayta olamiz
+    await loadAds();
+  } else {
+    allAds.value = [...pendingAds.value.filter((a) => !before.has(a._id)), ...allAds.value];
+    pendingAds.value = [];
+  }
+  highlightNew(before);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function handleSocketMessage(msg: AdSocketMessage) {
   if (msg.type === 'initial_ads') {
     const incoming = Array.isArray(msg.data) ? msg.data : [];
-    const newAds = incoming.filter((a) => !allAds.value.some((x) => x._id === a._id));
-    allAds.value = [...newAds, ...allAds.value];
+    // Eng yangisi tepada turishi uchun teskari tartibda qo'shamiz
+    for (const ad of [...incoming].reverse()) {
+      if (!allAds.value.some((x) => x._id === ad._id)) queueAd(ad);
+    }
     return;
   }
 
@@ -619,5 +716,23 @@ onMounted(() => {
   setupWebSocket();
 });
 
-onUnmounted(teardownWebSocket);
+onUnmounted(() => {
+  teardownWebSocket();
+  if (highlightTimer) clearTimeout(highlightTimer);
+});
 </script>
+
+<style scoped>
+/* "Yangi e'lonlar" tugmasi paydo bo'lishi va yo'qolishi */
+.new-ads-enter-active,
+.new-ads-leave-active {
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+}
+.new-ads-enter-from,
+.new-ads-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+</style>
