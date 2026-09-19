@@ -318,7 +318,7 @@
             :label="t('telegram.chat')"
             style="min-width: 200px"
             behavior="menu"
-            @update:model-value="loadMessages"
+            @update:model-value="onFilterChange"
           />
           <q-select
             v-model="filterProcessed"
@@ -332,13 +332,14 @@
             :label="t('telegram.status')"
             style="min-width: 150px"
             behavior="menu"
-            @update:model-value="loadMessages"
+            @update:model-value="onFilterChange"
           />
           <q-toggle v-model="autoRefresh" dense :label="t('telegram.autoRefresh')" />
         </div>
       </div>
 
       <q-table
+        v-model:pagination="pagination"
         :rows="messages"
         :columns="messageColumns"
         row-key="_id"
@@ -349,7 +350,8 @@
         :loading="loadingMessages"
         :no-data-label="t('telegram.noMessages')"
         :rows-per-page-label="t('common.rowsPerPage')"
-        :pagination="{ rowsPerPage: 20 }"
+        :rows-per-page-options="ROWS_PER_PAGE_OPTIONS"
+        @request="onRequest"
       >
         <template #body-cell-time="{ row }">
           <q-td class="whitespace-nowrap">{{ formatDateTime(row.sentAt || row.createdAt, locale) }}</q-td>
@@ -560,12 +562,21 @@ const deleting = ref(false);
 const messages = ref<TelegramMessage[]>([]);
 const total = ref(0);
 const loadingMessages = ref(false);
+// Sahifalash serverda: jadvalga faqat joriy sahifa keladi, rowsNumber — bazadagi jami son.
+// Backend perPage ni 200 gacha cheklaydi, shuning uchun "Hammasi" (0) varianti yo'q.
+const ROWS_PER_PAGE_OPTIONS = [20, 50, 100, 200];
+const pagination = ref<{ page: number; rowsPerPage: number; rowsNumber?: number }>({
+  page: 1,
+  rowsPerPage: 20,
+  rowsNumber: 0,
+});
 const filterChat = ref<string | null>(null);
 const filterProcessed = ref<'all' | 'true' | 'false'>('all');
 const autoRefresh = ref(true);
 const processingId = ref<string | null>(null);
 let timer: ReturnType<typeof setInterval> | null = null;
 let loginTimer: ReturnType<typeof setInterval> | null = null;
+let messagesReqId = 0;
 
 const sourceColumns = computed<QTableColumn[]>(() => [
   { name: 'isActive', label: t('telegram.active'), field: 'isActive', align: 'left' },
@@ -657,21 +668,37 @@ async function loadSources() {
 }
 
 async function loadMessages() {
+  const reqId = ++messagesReqId;
   loadingMessages.value = true;
   try {
     const res = await apiTelegramMessages({
       chatId: filterChat.value ?? undefined,
       processed: filterProcessed.value === 'all' ? undefined : filterProcessed.value === 'true',
-      page: 1,
-      perPage: 100,
+      page: pagination.value.page,
+      perPage: pagination.value.rowsPerPage,
     });
+    // Sahifa/filtr almashganda kechikib kelgan eski javob yangisini bosib ketmasin
+    if (reqId !== messagesReqId) return;
     messages.value = res.data.data.items;
     total.value = res.data.data.total;
+    pagination.value.rowsNumber = total.value;
   } catch {
     // interceptor xabar beradi
   } finally {
-    loadingMessages.value = false;
+    if (reqId === messagesReqId) loadingMessages.value = false;
   }
+}
+
+// Jadval sahifa yoki qatorlar sonini almashtirganda
+function onRequest({ pagination: p }: { pagination: { page: number; rowsPerPage: number } }) {
+  pagination.value = { ...pagination.value, page: p.page, rowsPerPage: p.rowsPerPage };
+  void loadMessages();
+}
+
+// Filtr o'zgarsa natija boshqacha bo'ladi — 1-sahifadan boshlaymiz
+function onFilterChange() {
+  pagination.value.page = 1;
+  void loadMessages();
 }
 
 function refreshAll() {
