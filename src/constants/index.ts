@@ -8,7 +8,7 @@ export function isDirection(value: unknown): value is Direction {
 }
 
 // Backend bu ro'yxatlarni tekshirmaydi — matn e'londa qanday tanlansa shunday saqlanadi
-export const TRUCK_TYPES: string[] = ['Tent', 'Ref', 'Plashchaniy', 'Konteyner', 'Bortovoy', 'Samosval'];
+export const TRUCK_TYPES: string[] = ['Tent', 'Ref', 'Konteyner', 'Bortovoy', 'Samosval', 'Ploshadka', 'Tandem', 'Isuzu', 'Chakman', 'Paravoz'];
 export const PAYMENT_TYPES: string[] = ['Naqd', "Pul o'tkazish"];
 export const CURRENCIES: string[] = ['UZS', 'USD', 'RUB'];
 
