@@ -255,7 +255,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, reactive, onMounted, onUnmounted } from 'vue';
+import { ref, computed, reactive, nextTick, onMounted, onUnmounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import AdsCard from 'components/AdsCard.vue';
 import { apiGetAds, type AdsQuery, type LocationResult } from 'src/api';
@@ -624,6 +624,9 @@ async function showNewAds() {
     pendingAds.value = [];
   }
   highlightNew(before);
+  // Scroll'ni DOM yangilangandan keyin boshlaymiz: tepadan qo'shilgan kartalar sahifani siljitadi
+  // (scroll anchoring) va yarim yo'ldagi silliq scroll tepagacha yetmay qolishi mumkin
+  await nextTick();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 

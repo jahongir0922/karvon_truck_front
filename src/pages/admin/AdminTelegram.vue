@@ -364,7 +364,13 @@
         </template>
         <template #body-cell-sender="{ row }">
           <q-td>
-            <div>{{ row.fullName || '—' }}</div>
+            <!-- Ism — foydalanuvchi yozgan erkin matn: juda uzun bo'lsa jadval kengayib ketmasin -->
+            <div
+              class="ellipsis-2-lines break-words max-w-[260px]"
+              :title="row.fullName || undefined"
+            >
+              {{ row.fullName || '—' }}
+            </div>
             <div class="text-xs text-grey-6">
               {{ [row.username, row.userPhone].filter(Boolean).join(' · ') }}
             </div>
