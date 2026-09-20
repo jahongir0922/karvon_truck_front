@@ -2,6 +2,7 @@ export default {
   common: {
     save: "Сохранить",
     cancel: "Отмена",
+    close: "Закрыть",
     delete: "Удалить",
     add: "Добавить",
     search: "Поиск...",
@@ -97,6 +98,8 @@ export default {
     paymentLabel: "Оплата:",
     advanceLabel: "Аванс:",
     deliveryCostLabel: "Стоимость:",
+    sourceLabel: "Исходный текст:",
+    sourceTitle: "Исходный текст",
     contactLabel: "Контакт:",
     postedAt: "Размещено:",
     created: "Объявление размещено!",

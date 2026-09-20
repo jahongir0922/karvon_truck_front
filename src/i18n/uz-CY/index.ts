@@ -2,6 +2,7 @@ export default {
   common: {
     save: "Сақлаш",
     cancel: "Бекор",
+    close: "Ёпиш",
     delete: "Ўчириш",
     add: "Қўшиш",
     search: "Қидириш...",
@@ -97,6 +98,8 @@ export default {
     paymentLabel: "Тўлов:",
     advanceLabel: "Аванс:",
     deliveryCostLabel: "Йўл ҳақи:",
+    sourceLabel: "Асл матн:",
+    sourceTitle: "Асл матн",
     contactLabel: "Алоқа:",
     postedAt: "Жойланди:",
     created: "Эълон жойланди!",

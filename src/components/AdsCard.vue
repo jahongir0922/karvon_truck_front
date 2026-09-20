@@ -57,6 +57,14 @@
         </span>
       </div>
 
+      <template v-if="ad.sourceText">
+        <q-separator />
+        <div class="py-1">
+          <span class="text-grey-7 text-sm">{{ t('ad.sourceLabel') }}</span>
+          <ad-source-text :text="ad.sourceText" @more="openSource(ad.sourceText)" />
+        </div>
+      </template>
+
       <q-separator />
       <div class="flex items-center justify-between gap-2 py-1">
         <div class="flex items-center gap-1 text-sm text-grey-7">
@@ -93,13 +101,29 @@
         <span class="ml-auto">{{ t('ad.postedAt') }} {{ formatDateTime(ad.createdAt, locale) }}</span>
       </div>
     </q-card>
+
+    <!-- To'liq asl matn alohida oynada — karta kattalashib ketmasin -->
+    <q-dialog v-model="sourceOpen">
+      <q-card class="w-full">
+        <q-bar class="bg-primary text-white">
+          <span class="font-bold">{{ t('ad.sourceTitle') }}</span>
+          <q-space />
+          <q-btn v-close-popup flat dense icon="close" :aria-label="t('common.close')" />
+        </q-bar>
+        <q-card-section class="scroll" style="max-height: 70vh">
+          <div class="whitespace-pre-line break-words text-base text-grey-9">{{ sourceFull }}</div>
+        </q-card-section>
+      </q-card>
+    </q-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue';
 import { useQuasar } from 'quasar';
 import { useI18n } from 'vue-i18n';
 import { formatDate, formatDateTime, formatMoney } from 'src/utils/format';
+import AdSourceText from 'components/AdSourceText.vue';
 import type { Advertisement } from 'src/types';
 
 // highlightIds — hozirgina qo'shilgan e'lonlar: bir necha soniya ajralib turadi
@@ -107,6 +131,16 @@ defineProps<{ ads: Advertisement[]; highlightIds?: ReadonlySet<string> }>();
 
 const $q = useQuasar();
 const { t, locale } = useI18n();
+
+// Asl matn kartada ko'pi bilan 2 qator ko'rinadi, "Ko'proq" esa to'liq matnni alohida oynada ochadi.
+// Oynada e'lon emas, matnning o'zi saqlanadi: real-time yangilanish ochiq oynaga tegmaydi.
+const sourceOpen = ref(false);
+const sourceFull = ref('');
+
+function openSource(text: string) {
+  sourceFull.value = text;
+  sourceOpen.value = true;
+}
 
 function cargoText(ad: Advertisement): string {
   return [ad.loadName, ad.weight ? `${ad.weight} t` : '', ad.volume ? `${ad.volume} m³` : '']

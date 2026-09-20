@@ -45,6 +45,8 @@ export interface Advertisement {
   isActive: boolean;
   isAdditional: boolean;
   isAI: boolean;
+  /** Telegram'dan AI yaratgan e'londa — xabarning asl matni (qo'lda joylanganda yo'q) */
+  sourceText?: string | null;
   phone: string;
   clientName?: string;
   userId?: string;

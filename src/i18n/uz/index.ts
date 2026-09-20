@@ -2,6 +2,7 @@ export default {
   common: {
     save: "Saqlash",
     cancel: "Bekor",
+    close: "Yopish",
     delete: "O'chirish",
     add: "Qo'shish",
     search: "Qidirish...",
@@ -97,6 +98,8 @@ export default {
     paymentLabel: "To'lov:",
     advanceLabel: "Avans:",
     deliveryCostLabel: "Yo'l haqi:",
+    sourceLabel: "Asl matn:",
+    sourceTitle: "Asl matn",
     contactLabel: "Aloqa:",
     postedAt: "Joylandi:",
     created: "E'lon joylandi!",
