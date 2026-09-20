@@ -1,10 +1,14 @@
 <template>
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+  <div
+    ref="root"
+    class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
+  >
     <q-card
       v-for="ad in ads"
       :key="ad._id"
       class="p-4"
-      :class="{ 'ad-new': highlightIds?.has(ad._id) }"
+      :data-ad-id="ad._id"
+      :class="{ 'ad-new': highlightIds?.has(ad._id), 'ad-seen': seenIds.has(ad._id) }"
     >
       <div class="flex justify-center gap-1 items-center mb-1 text-center">
         <span class="font-bold text-primary">{{ ad.fromAddress }}</span>
@@ -119,18 +123,83 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { nextTick, onBeforeUnmount, ref, watch } from 'vue';
 import { useQuasar } from 'quasar';
 import { useI18n } from 'vue-i18n';
 import { formatDate, formatDateTime, formatMoney } from 'src/utils/format';
 import AdSourceText from 'components/AdSourceText.vue';
 import type { Advertisement } from 'src/types';
 
-// highlightIds — hozirgina qo'shilgan e'lonlar: bir necha soniya ajralib turadi
-defineProps<{ ads: Advertisement[]; highlightIds?: ReadonlySet<string> }>();
+// highlightIds — hozirgina qo'shilgan e'lonlar. Ular ko'rinmaguncha ajralib turadi:
+// foydalanuvchi pastdan tepaga o'qib chiqqunicha oqarib ketmasin. Ko'rilib, oqarib bo'lgach
+// `seen` chiqadi va egasi id'ni ro'yxatdan olib tashlaydi — karta oddiy oq holatda qoladi.
+const props = defineProps<{ ads: Advertisement[]; highlightIds?: ReadonlySet<string> }>();
+const emit = defineEmits<{ seen: [id: string] }>();
 
 const $q = useQuasar();
 const { t, locale } = useI18n();
+
+// Ajratilgan karta ekranga chiqqach SEEN_DELAY_MS turib, FADE_MS davomida oqaradi (CSS bilan bir xil)
+const SEEN_DELAY_MS = 1200;
+const FADE_MS = 500;
+// Karta ko'rindi deb sanaladi: kamida 40% ko'rinsa yoki (juda uzun karta uchun) shuncha px ko'rinsa
+const SEEN_RATIO = 0.4;
+const SEEN_MIN_PX = 300;
+const root = ref<HTMLElement | null>(null);
+const seenIds = ref(new Set<string>());
+const seenTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+const observer =
+  typeof IntersectionObserver === 'undefined'
+    ? null
+    : new IntersectionObserver(
+        (entries) => {
+          for (const entry of entries) {
+            const id = (entry.target as HTMLElement).dataset.adId;
+            const visible =
+              entry.isIntersecting &&
+              (entry.intersectionRatio >= SEEN_RATIO || entry.intersectionRect.height >= SEEN_MIN_PX);
+            if (!visible || !id || seenTimers.has(id) || seenIds.value.has(id)) continue;
+            seenTimers.set(
+              id,
+              setTimeout(() => {
+                seenIds.value = new Set(seenIds.value).add(id);
+                seenTimers.set(
+                  id,
+                  setTimeout(() => {
+                    seenTimers.delete(id);
+                    emit('seen', id);
+                  }, FADE_MS + 100),
+                );
+              }, SEEN_DELAY_MS),
+            );
+          }
+        },
+        { threshold: [0, 0.1, 0.2, SEEN_RATIO] },
+      );
+
+function stopWatchingSeen() {
+  observer?.disconnect();
+  seenTimers.forEach((timer) => clearTimeout(timer));
+  seenTimers.clear();
+}
+
+watch(
+  () => props.highlightIds,
+  async (ids) => {
+    observer?.disconnect();
+    if (!ids?.size) {
+      stopWatchingSeen();
+      seenIds.value = new Set();
+      return;
+    }
+    // Kartalar DOM'ga tushgach kuzatamiz
+    await nextTick();
+    root.value?.querySelectorAll('.ad-new[data-ad-id]').forEach((el) => observer?.observe(el));
+  },
+);
+
+onBeforeUnmount(stopWatchingSeen);
 
 // Asl matn kartada ko'pi bilan 2 qator ko'rinadi, "Ko'proq" esa to'liq matnni alohida oynada ochadi.
 // Oynada e'lon emas, matnning o'zi saqlanadi: real-time yangilanish ochiq oynaga tegmaydi.
@@ -184,18 +253,17 @@ async function share(ad: Advertisement) {
 </script>
 
 <style scoped>
-/* Oxirgi holat oddiy kartaga teng — animatsiya tugaganda sakrash bo'lmaydi */
 .ad-new {
-  animation: ad-new-flash 4s ease-out;
+  outline: 2px solid var(--q-primary);
+  background-color: #e3f2fd;
 }
-@keyframes ad-new-flash {
-  0%,
-  50% {
-    outline: 2px solid var(--q-primary);
-    background-color: #e3f2fd;
-  }
-  100% {
-    outline: 2px solid transparent;
+/* Ko'ringandan keyin oqaradi; oxirgi holat oddiy kartaga teng — sakrash bo'lmaydi */
+.ad-new.ad-seen {
+  animation: ad-new-fade 1s ease-out forwards;
+}
+@keyframes ad-new-fade {
+  to {
+    outline-color: transparent;
     background-color: #fff;
   }
 }

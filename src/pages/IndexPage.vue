@@ -218,7 +218,7 @@
           {{ t('index.noAds') }}
         </div>
 
-        <ads-card :ads="filteredAds" :highlight-ids="highlightIds" />
+        <ads-card :ads="filteredAds" :highlight-ids="highlightIds" @seen="onAdSeen" />
 
         <div v-if="filteredAds.length === 0 && allAds.length > 0" class="text-center text-grey-6 py-10">
           {{ t('index.noFilteredAds') }}
@@ -330,13 +330,11 @@ let loadSeq = 0;
 // WebSocket'dan kelgan yangi e'lonlar ekrandagi ro'yxatni siljitmasligi uchun avval shu yerga
 // tushadi; foydalanuvchi "yangi e'lonlar" tugmasini bosganda ro'yxatga qo'shiladi.
 const MAX_PENDING = 100;
-const HIGHLIGHT_MS = 5000;
 const pendingAds = ref<Advertisement[]>([]);
 // Bufer to'lib, eskilari tashlangan — bo'shliq qolmasligi uchun tugma ro'yxatni serverdan qayta oladi
 const pendingOverflow = ref(false);
-// Tugma bosilgach qo'shilgan e'lonlar bir necha soniya ajralib turadi
+// Tugma bosilgach qo'shilgan, hali ko'rilmagan e'lonlar. AdsCard ko'rilganini xabar qilgach id olinadi
 const highlightIds = ref(new Set<string>());
-let highlightTimer: ReturnType<typeof setTimeout> | null = null;
 
 // clearable q-input/q-select tozalanganda null beradi — shuning uchun `| null`
 interface Filters {
@@ -492,7 +490,8 @@ async function loadAds() {
     if (seq !== loadSeq) return; // eskirgan javob
     allAds.value = res.data.data;
     hasMore.value = res.data.data.length === PER_PAGE;
-    // Ro'yxat serverdan yangilandi — bufer eskirdi
+    // Ro'yxat serverdan yangilandi — bufer ham, ajratilgan kartalar ham eskirdi
+    highlightIds.value = new Set();
     pendingAds.value = [];
     pendingOverflow.value = false;
     needsReload = false;
@@ -602,18 +601,39 @@ function upsertAd(ad: Advertisement) {
   else queueAd(ad);
 }
 
-function highlightNew(before: Set<string>) {
-  highlightIds.value = new Set(
-    filteredAds.value.filter((a) => !before.has(a._id)).map((a) => a._id),
-  );
-  if (highlightTimer) clearTimeout(highlightTimer);
-  highlightTimer = setTimeout(() => {
-    highlightIds.value = new Set();
-    highlightTimer = null;
-  }, HIGHLIGHT_MS);
+// Yangi e'lonlarni eskilariga qo'shib ajratadi: oldingi to'plamdan hali ko'rilmaganlari ham
+// ko'rilmaguncha ko'k qoladi. Yangilarning id'lari qaytadi.
+function highlightNew(before: Set<string>): Set<string> {
+  const fresh = new Set(filteredAds.value.filter((a) => !before.has(a._id)).map((a) => a._id));
+  highlightIds.value = new Set([...highlightIds.value, ...fresh]);
+  return fresh;
 }
 
-// "Yangi e'lonlar" tugmasi: buferdagilarni ro'yxat boshiga qo'shadi va tepaga olib chiqadi
+// AdsCard karta ko'rilib, oqarib bo'lganini xabar qiladi — u endi oddiy oq karta
+function onAdSeen(id: string) {
+  const next = new Set(highlightIds.value);
+  if (next.delete(id)) highlightIds.value = next;
+}
+
+// Yangilar ichidagi eng oxirgisini (eng eskisini) ekranning pastiga qo'yadi: eng yangisi tepada
+// qoladi, foydalanuvchi esa pastdan tepaga qarab o'qiydi. Silliq emas, bir zumda o'tamiz —
+// aks holda tugma bosilganda sahifa ko'z o'ngida pastga "yuguradi".
+function jumpToLastNew(fresh: Set<string>) {
+  const lastId = [...filteredAds.value].reverse().find((a) => fresh.has(a._id))?._id;
+  const card = lastId ? document.querySelector<HTMLElement>(`[data-ad-id="${lastId}"]`) : null;
+  if (!card) {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    return;
+  }
+  // Pastki panel (q-footer) kartani yopib qo'ymasin
+  const footerH = document.querySelector<HTMLElement>('.q-footer')?.offsetHeight ?? 0;
+  const gap = 16;
+  const top = window.scrollY + card.getBoundingClientRect().bottom - (window.innerHeight - footerH - gap);
+  window.scrollTo({ top: Math.max(0, top), behavior: 'instant' });
+}
+
+// "Yangi e'lonlar" tugmasi: buferdagilarni ro'yxat boshiga qo'shadi va ularning oxirgisiga o'tkazadi.
+// Yangilar ko'rinmaguncha ajralib turadi (AdsCard), shuning uchun tepaga o'qib chiqishga ulguriladi.
 async function showNewAds() {
   const before = new Set(allAds.value.map((a) => a._id));
   if (pendingOverflow.value) {
@@ -623,11 +643,11 @@ async function showNewAds() {
     allAds.value = [...pendingAds.value.filter((a) => !before.has(a._id)), ...allAds.value];
     pendingAds.value = [];
   }
-  highlightNew(before);
-  // Scroll'ni DOM yangilangandan keyin boshlaymiz: tepadan qo'shilgan kartalar sahifani siljitadi
-  // (scroll anchoring) va yarim yo'ldagi silliq scroll tepagacha yetmay qolishi mumkin
+  const fresh = highlightNew(before);
+  // Scroll'ni DOM yangilangandan keyin qilamiz: tepadan qo'shilgan kartalar sahifani siljitadi
+  // (scroll anchoring), o'lchov esa yangi joylashuvdan olinishi kerak
   await nextTick();
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  jumpToLastNew(fresh);
 }
 
 function handleSocketMessage(msg: AdSocketMessage) {
@@ -721,7 +741,6 @@ onMounted(() => {
 
 onUnmounted(() => {
   teardownWebSocket();
-  if (highlightTimer) clearTimeout(highlightTimer);
 });
 </script>
 
