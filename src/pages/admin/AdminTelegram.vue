@@ -620,8 +620,8 @@ const resumeDialogText = computed(() => {
   const hasFrozenBacklog = aiStopped.value || queueFrozen.value;
   return hasFrozenBacklog ? t('telegram.resumeAllConfirm') : t('telegram.aiEnableConfirm');
 });
-// Navbatdagi (ishlanmagan) xabarlar soni — jadval filtriga bog'liq emas
-const queued = ref(0);
+// Navbatdagi (haqiqatan ishlanadigan) xabarlar soni — backend'dan, jadval filtriga bog'liq emas
+const queued = computed(() => status.value?.ai.queuedCount ?? 0);
 
 // Yoqish/davom ettirish pul sarflaydi — avval tasdiq so'raymiz; o'chirish darhol
 function onAiToggle(enabled: boolean) {
@@ -646,7 +646,6 @@ async function setAi(enabled: boolean, skipBacklog = false) {
       type: enabled ? 'positive' : 'info',
       message: enabled ? t('telegram.aiEnabled') : t('telegram.aiDisabled'),
     });
-    void loadQueued();
   } catch (err) {
     $q.notify({ type: 'negative', message: getErrorMessage(err, t('common.error')) });
   } finally {
@@ -808,15 +807,6 @@ async function loadMessages() {
   }
 }
 
-async function loadQueued() {
-  try {
-    const res = await apiTelegramMessages({ processed: false, page: 1, perPage: 1 });
-    queued.value = res.data.data.total;
-  } catch {
-    // interceptor xabar beradi
-  }
-}
-
 // Jadval sahifa yoki qatorlar sonini almashtirganda
 function onRequest({ pagination: p }: { pagination: { page: number; rowsPerPage: number } }) {
   pagination.value = { ...pagination.value, page: p.page, rowsPerPage: p.rowsPerPage };
@@ -833,7 +823,6 @@ function refreshAll() {
   void loadStatus();
   void loadSources();
   void loadMessages();
-  void loadQueued();
 }
 
 // ── Telegram hisobiga kirish ──
@@ -1020,7 +1009,6 @@ function startTimer() {
   timer = setInterval(() => {
     void loadStatus();
     void loadMessages();
-    void loadQueued();
   }, REFRESH_MS);
 }
 

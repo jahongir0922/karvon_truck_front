@@ -208,6 +208,12 @@ export interface TelegramStatus {
      * ettirish" bosilsa yoki hech qachon shunday to'xtatilmagan bo'lsa — null.
      */
     queueSkipBefore: string | null;
+    /**
+     * Haqiqatan navbatda turgan (keyingi ishga tushishda ishlanadigan) xabarlar
+     * soni — eski kunlardagi ishlanmagan xabarlarni hisoblamaydi (ular avtomatik
+     * ishlanmaydi).
+     */
+    queuedCount: number;
   };
 }
 
