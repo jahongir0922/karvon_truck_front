@@ -338,6 +338,74 @@
         </div>
       </div>
 
+      <!-- Navbat: uzun bo'lsa qayta ishlashni to'xtatish (AI o'chiriladi, bazada saqlanadi) -->
+      <div
+        v-if="queued > 0 || aiStopping"
+        class="flex items-center justify-between gap-2 flex-wrap rounded px-3 py-2 mb-2"
+        :class="aiStopped || queueFrozen ? 'bg-orange-1' : 'bg-blue-1'"
+      >
+        <div class="flex items-center gap-2 text-sm">
+          <q-icon
+            :name="aiStopped ? 'pause_circle' : 'autorenew'"
+            :color="aiStopped || queueFrozen ? 'orange' : 'primary'"
+            size="20px"
+          />
+          <span class="font-medium">{{ t('telegram.queueSize', { n: queued }) }}</span>
+          <span class="text-grey-8">
+            {{
+              aiStopping
+                ? t('telegram.stopping')
+                : aiStopped
+                  ? t('telegram.queueStopped')
+                  : queueFrozen
+                    ? t('telegram.queueFrozenNotice')
+                    : t('telegram.queueRunning')
+            }}
+          </span>
+        </div>
+        <div class="flex gap-1">
+          <!-- Ishlayapti (to'xtatilmagan) — to'xtatish -->
+          <q-btn
+            v-if="!aiStopped"
+            dense
+            no-caps
+            unelevated
+            color="negative"
+            icon="stop_circle"
+            class="px-2"
+            :label="t('telegram.stopProcessing')"
+            :loading="aiToggling"
+            @click="setAi(false)"
+          />
+          <!-- To'xtatilgan — faqat yangilarini davom ettirish -->
+          <q-btn
+            v-if="aiStopped"
+            dense
+            no-caps
+            unelevated
+            color="positive"
+            icon="play_arrow"
+            class="px-2"
+            :label="t('telegram.resumeProcessing')"
+            :disable="aiToggling || aiStopping || !status?.ai.configured"
+            @click="onResume('skip')"
+          />
+          <!-- To'xtatilgan yoki eski navbat hali muzlatilgan — barchasini davom ettirish -->
+          <q-btn
+            v-if="aiStopped || queueFrozen"
+            dense
+            no-caps
+            outline
+            color="positive"
+            icon="fast_forward"
+            class="px-2"
+            :label="t('telegram.resumeAllProcessing')"
+            :disable="aiToggling || aiStopping || !status?.ai.configured"
+            @click="onResume('all')"
+          />
+        </div>
+      </div>
+
       <q-table
         v-model:pagination="pagination"
         :rows="messages"
@@ -400,6 +468,9 @@
             <q-badge v-else-if="row.skipReason === 'empty'" color="grey-6">
               {{ t('telegram.noText') }}
             </q-badge>
+            <q-badge v-else-if="!row.isProcessed && isRowFrozen(row)" color="deep-orange-4">
+              {{ t('telegram.stopped') }}
+            </q-badge>
             <q-badge v-else :color="row.isProcessed ? (row.aiError ? 'orange' : 'positive') : 'grey'">
               {{ row.isProcessed ? t('telegram.processed') : t('telegram.unprocessed') }}
             </q-badge>
@@ -442,13 +513,18 @@
       </q-card>
     </q-dialog>
 
-    <!-- AI ni yoqishni tasdiqlash (pul sarflaydi) -->
+    <!-- AI ni yoqish/davom ettirishni tasdiqlash (pul sarflaydi) -->
     <q-dialog v-model="aiEnableDialog" persistent>
       <q-card style="max-width: 460px">
-        <q-card-section class="text-base">{{ t('telegram.aiEnableConfirm') }}</q-card-section>
+        <q-card-section class="text-base">{{ resumeDialogText }}</q-card-section>
         <q-card-actions align="right">
           <q-btn v-close-popup flat :label="t('common.cancel')" />
-          <q-btn color="positive" :label="t('telegram.enable')" :loading="aiToggling" @click="setAi(true)" />
+          <q-btn
+            color="positive"
+            :label="t('telegram.enable')"
+            :loading="aiToggling"
+            @click="setAi(true, resumeMode === 'skip')"
+          />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -517,23 +593,60 @@ const reconnecting = ref(false);
 // ── AI avtomatik qayta ishlash ──
 const aiToggling = ref(false);
 const aiEnableDialog = ref(false);
+// Tasdiq oynasi qaysi rejim uchun ochilgani: 'all' — navbat to'liq (eskilari bilan)
+// davom etadi, 'skip' — faqat shu paytdan keyingi yangi xabarlar ishlanadi
+const resumeMode = ref<'all' | 'skip'>('all');
+// AI o'chiq — navbatdagi xabarlar ishlanmaydi ("Navbatda" o'rniga "To'xtatilgan" ko'rsatiladi)
+const aiStopped = computed(() => status.value?.ai.enabled === false);
+// O'chirildi, lekin hozirgi xabar hali tugamagan
+const aiStopping = computed(() => aiStopped.value && !!status.value?.ai.isProcessing);
+// AI ishlayapti, lekin "Davom ettirish" (faqat yangilar) bosilganidan keyingi eski
+// navbat hali muzlatilgan holda — "Barchasini davom ettirish" kutmoqda
+const queueFrozen = computed(() => !aiStopped.value && !!status.value?.ai.queueSkipBefore);
 
+// Bitta xabar hozir ishlanmayapti va navbatda ham emas: AI butunlay to'xtatilgan
+// bo'lsa — hammasi; yoki AI ishlayapti-yu, bu xabar "Davom ettirish" bosilgan
+// paytdan oldin kelgan bo'lsa (hali muzlatilgan, "Barchasini davom ettirish" kutilmoqda)
+function isRowFrozen(row: TelegramMessage): boolean {
+  if (aiStopped.value) return true;
+  const skipBefore = status.value?.ai.queueSkipBefore;
+  if (!skipBefore) return false;
+  const created = new Date(row.sentAt || row.createdAt).getTime();
+  return created < new Date(skipBefore).getTime();
+}
+// Tasdiq oynasi matni: rejim va hozirgi muzlatilgan navbat borligiga qarab farqlanadi
+const resumeDialogText = computed(() => {
+  if (resumeMode.value === 'skip') return t('telegram.resumeConfirm');
+  const hasFrozenBacklog = aiStopped.value || queueFrozen.value;
+  return hasFrozenBacklog ? t('telegram.resumeAllConfirm') : t('telegram.aiEnableConfirm');
+});
+// Navbatdagi (ishlanmagan) xabarlar soni — jadval filtriga bog'liq emas
+const queued = ref(0);
+
+// Yoqish/davom ettirish pul sarflaydi — avval tasdiq so'raymiz; o'chirish darhol
 function onAiToggle(enabled: boolean) {
-  // Yoqish pul sarflaydi — avval tasdiq so'raymiz; o'chirish darhol
-  if (enabled) aiEnableDialog.value = true;
+  if (enabled) onResume('all');
   else void setAi(false);
 }
 
-async function setAi(enabled: boolean) {
+// mode: 'skip' — faqat yangi xabarlar, hozirgi navbat to'xtatilgan holda qoladi;
+// 'all' — navbat to'liq (eski xabarlar bilan birga) davom etadi
+function onResume(mode: 'all' | 'skip') {
+  resumeMode.value = mode;
+  aiEnableDialog.value = true;
+}
+
+async function setAi(enabled: boolean, skipBacklog = false) {
   aiToggling.value = true;
   try {
-    const res = await apiTelegramSetAi(enabled);
+    const res = await apiTelegramSetAi(enabled, enabled ? skipBacklog : undefined);
     if (status.value) status.value = { ...status.value, ai: res.data.data };
     aiEnableDialog.value = false;
     $q.notify({
       type: enabled ? 'positive' : 'info',
       message: enabled ? t('telegram.aiEnabled') : t('telegram.aiDisabled'),
     });
+    void loadQueued();
   } catch (err) {
     $q.notify({ type: 'negative', message: getErrorMessage(err, t('common.error')) });
   } finally {
@@ -695,6 +808,15 @@ async function loadMessages() {
   }
 }
 
+async function loadQueued() {
+  try {
+    const res = await apiTelegramMessages({ processed: false, page: 1, perPage: 1 });
+    queued.value = res.data.data.total;
+  } catch {
+    // interceptor xabar beradi
+  }
+}
+
 // Jadval sahifa yoki qatorlar sonini almashtirganda
 function onRequest({ pagination: p }: { pagination: { page: number; rowsPerPage: number } }) {
   pagination.value = { ...pagination.value, page: p.page, rowsPerPage: p.rowsPerPage };
@@ -711,6 +833,7 @@ function refreshAll() {
   void loadStatus();
   void loadSources();
   void loadMessages();
+  void loadQueued();
 }
 
 // ── Telegram hisobiga kirish ──
@@ -897,6 +1020,7 @@ function startTimer() {
   timer = setInterval(() => {
     void loadStatus();
     void loadMessages();
+    void loadQueued();
   }, REFRESH_MS);
 }
 

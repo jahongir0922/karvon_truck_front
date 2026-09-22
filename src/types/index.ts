@@ -202,6 +202,12 @@ export interface TelegramStatus {
     lastError: string | null;
     /** Limit tugagan bo'lsa tiklanish vaqti (ISO) */
     retryAt: string | null;
+    /**
+     * "Davom ettirish" (faqat yangilar) bosilgan vaqt (ISO) — shu vaqtdan oldingi
+     * ishlanmagan xabarlar navbatda to'xtatilgan holda qoladi. "Barchasini davom
+     * ettirish" bosilsa yoki hech qachon shunday to'xtatilmagan bo'lsa — null.
+     */
+    queueSkipBefore: string | null;
   };
 }
 

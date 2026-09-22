@@ -175,9 +175,12 @@ export const apiTelegramDeleteSource = (id: string) => axios.delete(`telegram/so
 export const apiTelegramReconnect = () =>
   axios.post<Wrapped<{ restarting: boolean }>>('telegram/reconnect');
 
-// AI avtomatik qayta ishlashni yoqish/o'chirish
-export const apiTelegramSetAi = (enabled: boolean) =>
-  axios.put<Wrapped<TelegramStatus['ai']>>('telegram/ai', { enabled });
+// AI avtomatik qayta ishlashni yoqish/o'chirish.
+// skipBacklog: true — faqat shu paytdan keyingi xabarlar ishlanadi, hozirgi
+// navbat to'xtatilgan holda qoladi ("Davom ettirish"); false/berilmagan —
+// navbat to'liq (eski xabarlar bilan) davom etadi ("Barchasini davom ettirish").
+export const apiTelegramSetAi = (enabled: boolean, skipBacklog?: boolean) =>
+  axios.put<Wrapped<TelegramStatus['ai']>>('telegram/ai', { enabled, skipBacklog });
 
 // Telegram hisobiga kirish: telefon → kod → (2FA parol)
 export const apiTelegramLoginStart = (phone: string) =>
