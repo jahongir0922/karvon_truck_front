@@ -71,7 +71,21 @@ export default defineConfig((ctx) => {
 
     // https://v2.quasar.dev/quasar-cli-vite/quasar-config-file#framework
     framework: {
-      config: {},
+      // Ranglar src/css/quasar.variables.scss bilan bir xil
+      config: {
+        brand: {
+          primary: '#2459e0',
+          secondary: '#0f9d8a',
+          accent: '#f59e0b',
+          dark: '#1d2433',
+          'dark-page': '#121722',
+          positive: '#16a34a',
+          negative: '#dc2626',
+          info: '#0ea5e9',
+          warning: '#f59e0b',
+        },
+        notify: { position: 'top', timeout: 2500 },
+      },
 
       // Quasar plugins
       plugins: ['Loading', 'Notify'],

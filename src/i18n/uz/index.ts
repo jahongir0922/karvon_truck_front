@@ -62,6 +62,7 @@ export default {
     registerError: "Ro'yxatdan o'tishda xatolik yuz berdi",
     registered: "Ro'yxatdan o'tdingiz! Xush kelibsiz.",
     showPassword: "Parolni ko'rsatish",
+    tagline: "Yuk egalari va haydovchilarni bog'laydigan platforma",
   },
   ad: {
     newAd: "Yangi yuk e'loni",
@@ -106,6 +107,12 @@ export default {
     loginHint:
       "E'lonni keyinchalik tahrirlash yoki o'chirish uchun tizimga kiring. Kirmasangiz ham e'lon joylanadi.",
     call: "Qo'ng'iroq qilish",
+    priceNegotiable: "Narx kelishiladi",
+    newAdHint: "Ma'lumotlarni to'ldiring — e'lon darhol yuklar ro'yxatida ko'rinadi",
+    sectionRoute: "Yo'nalish",
+    sectionCargo: "Yuk haqida",
+    sectionPrice: "Narx va to'lov",
+    sectionContact: "Aloqa",
   },
   myAds: {
     title: "Mening e'lonlarim",
@@ -118,6 +125,7 @@ export default {
     confirmDelete: "Bu e'lonni butunlay o'chirmoqchimisiz? Buni qaytarib bo'lmaydi.",
     activate: "Faollashtirish",
     deactivate: "Nofaol qilish",
+    count: "{n} ta e'lon",
   },
   index: {
     filterTitle: "Filtr",
@@ -135,6 +143,10 @@ export default {
     liveOn: "Jonli yangilanish ulangan",
     liveOff: "Jonli yangilanish uzildi, qayta ulanmoqda...",
     newAds: "{n} ta yangi e'lon",
+    live: "Jonli",
+    chooseDirectionHint: "Keyin istalgan vaqtda almashtirishingiz mumkin",
+    internationalHint: "Mamlakatlar o'rtasidagi yuklar",
+    intercityHint: "Mamlakat ichidagi yuklar",
   },
   admin: {
     title: "Admin panel",

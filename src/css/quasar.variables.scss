@@ -1,30 +1,43 @@
 // Quasar SCSS (& Sass) Variables
 // --------------------------------------------------
-// To customize the look and feel of this app, you can override
-// the Sass/SCSS variables found in Quasar's source Sass/SCSS files.
+// Brend ranglari shu yerda: Quasar komponentlari (q-btn color="primary" va h.k.) ham shulardan oladi.
+// Ularni quasar.config.ts dagi framework.config.brand bilan bir xil tuting.
 
-// Check documentation for full list of Quasar variables
+$primary: #2459e0;
+$secondary: #0f9d8a;
+$accent: #f59e0b;
 
-// Your own variables (that are declared here) and Quasar's own
-// ones will be available out of the box in your .vue/.scss/.sass files
+$dark: #1d2433;
+$dark-page: #121722;
 
-// It's highly recommended to change the default colors
-// to match your app's branding.
-// Tip: Use the "Theme Builder" on Quasar's documentation website.
+$positive: #16a34a;
+$negative: #dc2626;
+$info: #0ea5e9;
+$warning: #f59e0b;
 
+$generic-border-radius: 10px;
 
 :root {
-  --primary: #1976d2;
-  --secondary: #26a69a;
-  --accent: #9c27b0;
-  --dark: #1d1d1d;
-  --dark-page: #121212;
-  --positive: #21ba45;
-  --negative: #c10015;
-  --info: #31ccec;
-  --warning: #f2c037;
-  --gray: rgb(85, 85, 85);
-  // fonts
-  --title: 18px;
-  --text: 16px;
+  // Sahifa va sirtlar
+  --kt-bg: #f3f5fa;
+  --kt-surface: #ffffff;
+  --kt-surface-2: #f5f7fb;
+  --kt-border: #e4e8f0;
+  // Matn
+  --kt-text: #121826;
+  --kt-text-2: #4b5567;
+  --kt-muted: #7a8599;
+  // Brend
+  --kt-primary: #{$primary};
+  --kt-primary-soft: #eaf0ff;
+  --kt-primary-dark: #1a44b3;
+  --kt-accent: #{$accent};
+  --kt-accent-soft: #fff4e0;
+  --kt-teal-soft: #e3f6f3;
+  // Shakl
+  --kt-radius: 16px;
+  --kt-radius-sm: 12px;
+  --kt-shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 2px 8px rgba(16, 24, 40, 0.05);
+  --kt-shadow-hover: 0 4px 12px rgba(16, 24, 40, 0.08), 0 12px 32px rgba(16, 24, 40, 0.08);
+  --kt-header-h: 60px;
 }

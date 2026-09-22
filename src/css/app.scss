@@ -8,33 +8,299 @@
   margin: 0;
   padding: 0;
 }
+
+html,
+body {
+  background: var(--kt-bg);
+  color: var(--kt-text);
+  font-family:
+    'Inter',
+    'Roboto',
+    -apple-system,
+    'Segoe UI',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
 a {
   text-decoration: none;
+  color: inherit;
 }
-.red {
-  border: 1px solid red;
+
+// ─── Quasar komponentlari: umumiy ko'rinish ───────────────────────────────────
+
+// Katta harflar o'qishni qiyinlashtiradi — tugma va tablar oddiy yozuvda
+.q-btn,
+.q-tab__label {
+  text-transform: none;
+  letter-spacing: 0;
 }
-.title {
-  font-weight: 500;
-  font-size: var(--title);
-  color: var(--gray);
+.q-btn {
+  font-weight: 600;
 }
-.text {
-  font-size: var(--text);
-  color: var(--gray);
+.q-btn:not(.q-btn--round) {
+  border-radius: 10px;
 }
-.q-icon {
-  color: var(--gray);
+
+.q-card {
+  border-radius: var(--kt-radius);
+  box-shadow: var(--kt-shadow);
+  border: 1px solid var(--kt-border);
 }
+.q-dialog .q-card {
+  border: 0;
+  border-radius: 20px;
+  box-shadow: 0 24px 64px rgba(16, 24, 40, 0.24);
+}
+.q-dialog .q-card.kt-dialog-full {
+  border-radius: 0;
+}
+.q-menu {
+  border-radius: 12px;
+  box-shadow: 0 8px 28px rgba(16, 24, 40, 0.16);
+}
+
+// To'ldirilgan maydonlar: pastki chiziq o'rniga yumaloq quti va fokusda halqa
+.q-field--filled .q-field__control {
+  border-radius: var(--kt-radius-sm);
+  background: var(--kt-surface-2);
+  transition:
+    box-shadow 0.15s ease,
+    background 0.15s ease;
+}
+.q-field--filled .q-field__control:before {
+  border: 1px solid var(--kt-border);
+  border-radius: var(--kt-radius-sm);
+  background: transparent;
+}
+.q-field--filled .q-field__control:after {
+  display: none;
+}
+.q-field--filled .q-field__control:hover:before {
+  border-color: #c9d1df;
+}
+.q-field--filled.q-field--highlighted .q-field__control {
+  background: var(--kt-surface);
+  box-shadow: 0 0 0 3px rgba(36, 89, 224, 0.14);
+}
+.q-field--filled.q-field--highlighted .q-field__control:before {
+  border-color: var(--kt-primary);
+}
+.q-field--filled.q-field--error .q-field__control:before {
+  border-color: var(--q-negative);
+}
+.q-field--outlined .q-field__control {
+  border-radius: var(--kt-radius-sm);
+}
+
+.q-notification {
+  border-radius: 12px;
+}
+
+// Admin jadvallari
+.q-table__card {
+  border-radius: var(--kt-radius);
+  box-shadow: var(--kt-shadow);
+}
+.q-table--bordered {
+  border-color: var(--kt-border);
+}
+.q-table thead th {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--kt-muted);
+  background: var(--kt-surface-2);
+}
+.q-table tbody tr:hover > td {
+  background: #f9fafc;
+}
+
+// ─── Ilova yordamchi klasslari ─────────────────────────────────────────────────
+
+// Sahifa konteyneri: telefonda chetdan 12px, katta ekranda o'rtada
+.kt-page {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 16px 12px 24px;
+}
+@media (min-width: 600px) {
+  .kt-page {
+    padding: 24px 20px 32px;
+  }
+}
+
+.kt-page-title {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  color: var(--kt-text);
+}
+.kt-page-subtitle {
+  margin-top: 4px;
+  font-size: 14px;
+  color: var(--kt-muted);
+}
+
+.kt-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--kt-text);
+}
+.kt-section-title .q-icon {
+  color: var(--kt-primary);
+}
+
+.kt-muted {
+  color: var(--kt-muted);
+}
+
+// Bo'sh holat: ikonka, sarlavha, izoh
+.kt-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+  padding: 48px 16px;
+  color: var(--kt-muted);
+}
+.kt-empty__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  margin-bottom: 4px;
+  border-radius: 50%;
+  background: var(--kt-primary-soft);
+  color: var(--kt-primary);
+}
+.kt-empty__title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--kt-text);
+}
+
+// Marshrut: "qayerdan" nuqtasi, uzuq chiziq, "qayerga" belgisi
+.kt-route {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+.kt-route__point {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+}
+.kt-route__marker {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 22px;
+}
+.kt-route__dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 3px solid var(--kt-primary);
+  background: var(--kt-surface);
+}
+.kt-route__pin {
+  width: 12px;
+  height: 12px;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  background: var(--kt-accent);
+}
+// Nuqtalarni ulovchi uzuq chiziq
+.kt-route::before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 17px;
+  bottom: 17px;
+  border-left: 2px dashed #c7d0e0;
+}
+.kt-route__name {
+  min-width: 0;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 22px;
+  color: var(--kt-text);
+  overflow-wrap: anywhere;
+}
+
+// Ikki qismli tanlagich (q-btn-toggle): yo'nalish va h.k.
+.kt-segment {
+  padding: 4px;
+  border: 1px solid var(--kt-border);
+  border-radius: 12px;
+  background: var(--kt-surface);
+}
+.kt-segment .q-btn {
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: 9px !important;
+  font-weight: 600;
+}
+.kt-segment .q-btn__content {
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+// Kichik "chip" yorliqlar (yo'nalish, holat)
+.kt-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 24px;
+  padding: 0 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  background: var(--kt-surface-2);
+  color: var(--kt-text-2);
+}
+.kt-tag--international {
+  background: var(--kt-teal-soft);
+  color: #0b7a6b;
+}
+.kt-tag--intercity {
+  background: var(--kt-primary-soft);
+  color: var(--kt-primary-dark);
+}
+.kt-tag--positive {
+  background: #e7f7ec;
+  color: #15803d;
+}
+.kt-tag--muted {
+  background: #eef0f4;
+  color: var(--kt-muted);
+}
+
+// ─── Sahifa o'tishlari ─────────────────────────────────────────────────────────
 .fade-enter-active,
 .fade-leave-active {
   transition:
-    opacity 0.5s ease,
-    transform 0.5s ease;
+    opacity 0.2s ease,
+    transform 0.2s ease;
 }
 
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
-  transform: translateX(100px);
+  transform: translateY(6px);
 }

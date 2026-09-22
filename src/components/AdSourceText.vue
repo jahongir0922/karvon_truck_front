@@ -1,5 +1,5 @@
 <template>
-  <div class="source-box relative mt-1 rounded px-2 py-1">
+  <div class="source-box relative mt-1 px-3 py-2">
     <div ref="textEl" class="source-text whitespace-pre-line break-words text-sm text-grey-9">{{ shown }}</div>
     <!-- Tugma 2-qator oxirida turadi; uning ostidagi matn oxiri quti fonida so'nadi -->
     <div v-if="truncated" class="source-more">
@@ -65,8 +65,9 @@ watch(shown, () => void nextTick(measure));
 <style scoped>
 /* Tugma ostidagi matn oxirini so'ndirish uchun gradient shu fon rangiga o'tadi */
 .source-box {
-  --source-bg: #f5f5f5;
+  --source-bg: #f5f7fb;
   background: var(--source-bg);
+  border-radius: 10px;
 }
 .source-text {
   display: -webkit-box;
@@ -75,12 +76,12 @@ watch(shown, () => void nextTick(measure));
   line-clamp: 2;
   overflow: hidden;
 }
-/* Quti ichki bo'shlig'i (px-2 py-1) va matn qatori balandligi (text-sm = 1.25rem) bilan mos:
+/* Quti ichki bo'shlig'i (px-3 py-2) va matn qatori balandligi (text-sm = 1.25rem) bilan mos:
    tugma 2-qator bilan bir chiziqda, o'ng chetda. Quasar .flex qatorni o'raydi, shuning uchun oddiy flex. */
 .source-more {
   position: absolute;
-  right: 0.5rem;
-  bottom: 0.25rem;
+  right: 0.75rem;
+  bottom: 0.5rem;
   display: flex;
   align-items: center;
   height: 1.25rem;

@@ -1,121 +1,105 @@
 <template>
   <div
     ref="root"
-    class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
+    class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4"
   >
     <q-card
       v-for="ad in ads"
       :key="ad._id"
-      class="p-4"
+      class="ad-card"
       :data-ad-id="ad._id"
       :class="{ 'ad-new': highlightIds?.has(ad._id), 'ad-seen': seenIds.has(ad._id) }"
     >
-      <div class="flex justify-center gap-1 items-center mb-1 text-center">
-        <span class="font-bold text-primary">{{ ad.fromAddress }}</span>
-        <q-icon class="text-primary" name="arrow_forward" />
-        <span class="font-bold text-primary">{{ ad.toAddress }}</span>
-      </div>
-      <div class="flex justify-center gap-1 mb-2">
-        <q-badge :color="ad.direction === 'international' ? 'teal' : 'blue-grey'" outline>
-          {{ ad.direction === 'international' ? t('ad.international') : t('ad.intercity') }}
-        </q-badge>
-      </div>
-
-      <q-separator />
-      <div class="flex items-center justify-between gap-2 py-1">
-        <span class="text-grey-7 text-sm">{{ t('ad.truckLabel') }}</span>
-        <span class="text-sm font-medium text-right">{{ ad.truckType?.join(' / ') || '—' }}</span>
-      </div>
-
-      <q-separator />
-      <div class="flex items-center justify-between gap-2 py-1">
-        <span class="text-grey-7 text-sm">{{ t('ad.cargoLabel') }}</span>
-        <span class="text-sm text-right">{{ cargoText(ad) || '—' }}</span>
-      </div>
-
-      <template v-if="ad.descriptions">
-        <q-separator />
-        <div class="flex items-start justify-between gap-2 py-1">
-          <span class="text-grey-7 text-sm">{{ t('ad.extraLabel') }}</span>
-          <p class="text-sm text-right whitespace-pre-line">{{ ad.descriptions }}</p>
-        </div>
-      </template>
-
-      <q-separator />
-      <div class="flex items-center justify-between gap-2 py-1">
-        <span class="text-grey-7 text-sm">{{ t('ad.paymentLabel') }}</span>
-        <span class="text-sm">{{ ad.paymentType || '—' }}</span>
-      </div>
-
-      <q-separator />
-      <div class="flex items-center justify-between gap-2 py-1">
-        <span class="text-grey-7 text-sm">{{ t('ad.advanceLabel') }}</span>
-        <span class="text-sm">{{ formatMoney(ad.advance, ad.currency, locale) || '—' }}</span>
-      </div>
-
-      <q-separator />
-      <div class="flex items-center justify-between gap-2 py-1">
-        <span class="text-grey-7 text-sm">{{ t('ad.deliveryCostLabel') }}</span>
-        <span class="text-sm font-medium">
-          {{ formatMoney(ad.deliveryCost, ad.currency, locale) || '—' }}
+      <div class="ad-card__head">
+        <span class="ad-card__posted" :title="`${t('ad.postedAt')} ${formatDateTime(ad.createdAt, locale)}`">
+          <q-icon name="schedule" size="14px" />
+          {{ formatDateTime(ad.createdAt, locale) }}
+        </span>
+        <span v-if="ad.paymentType" class="kt-tag">
+          <q-icon name="payments" size="14px" />
+          {{ ad.paymentType }}
         </span>
       </div>
 
-      <template v-if="ad.sourceText">
-        <q-separator />
-        <div class="py-1">
-          <span class="text-grey-7 text-sm">{{ t('ad.sourceLabel') }}</span>
-          <ad-source-text :text="ad.sourceText" @more="openSource(ad.sourceText)" />
+      <div class="kt-route">
+        <div class="kt-route__point">
+          <span class="kt-route__marker"><span class="kt-route__dot" /></span>
+          <span class="kt-route__name">{{ ad.fromAddress }}</span>
         </div>
-      </template>
-
-      <q-separator />
-      <div class="flex items-center justify-between gap-2 py-1">
-        <div class="flex items-center gap-1 text-sm text-grey-7">
-          <q-icon name="event" size="16px" />
-          {{ formatDate(ad.loadingTime, locale) || '—' }}
-        </div>
-        <div class="flex items-center gap-1">
-          <q-btn
-            flat
-            dense
-            round
-            size="sm"
-            icon="share"
-            :aria-label="t('common.share')"
-            @click="share(ad)"
-          >
-            <q-tooltip>{{ t('common.share') }}</q-tooltip>
-          </q-btn>
-          <q-btn
-            flat
-            dense
-            no-caps
-            color="primary"
-            icon="call"
-            :label="ad.phone"
-            :href="'tel:' + ad.phone"
-            :aria-label="t('ad.call')"
-          />
+        <div class="kt-route__point">
+          <span class="kt-route__marker"><span class="kt-route__pin" /></span>
+          <span class="kt-route__name">{{ ad.toAddress }}</span>
         </div>
       </div>
 
-      <div class="flex items-center justify-between gap-2 text-xs text-grey-6 pt-1">
-        <span v-if="ad.clientName">{{ t('ad.contactLabel') }} {{ ad.clientName }}</span>
-        <span class="ml-auto">{{ t('ad.postedAt') }} {{ formatDateTime(ad.createdAt, locale) }}</span>
+      <!-- Narx — haydovchi birinchi qaraydigan narsa -->
+      <div class="ad-card__price q--avoid-card-border">
+        <div class="min-w-0">
+          <div
+            class="ad-card__cost"
+            :class="{ 'ad-card__cost--none': !formatMoney(ad.deliveryCost, ad.currency, locale) }"
+          >
+            {{ formatMoney(ad.deliveryCost, ad.currency, locale) || t('ad.priceNegotiable') }}
+          </div>
+          <div v-if="formatMoney(ad.advance, ad.currency, locale)" class="ad-card__advance">
+            {{ t('ad.advance') }}: {{ formatMoney(ad.advance, ad.currency, locale) }}
+          </div>
+        </div>
+      </div>
+
+      <dl v-if="facts(ad).length" class="ad-card__facts">
+        <div v-for="fact in facts(ad)" :key="fact.icon" class="ad-card__fact">
+          <dt><q-icon :name="fact.icon" size="16px" />{{ fact.label }}</dt>
+          <dd>{{ fact.value }}</dd>
+        </div>
+      </dl>
+
+      <p v-if="ad.descriptions" class="ad-card__desc">{{ ad.descriptions }}</p>
+
+      <div v-if="ad.sourceText" class="ad-card__source">
+        <div class="ad-card__source-label">
+          <q-icon name="send" size="14px" />
+          {{ t('ad.sourceTitle') }}
+        </div>
+        <ad-source-text :text="ad.sourceText" @more="openSource(ad.sourceText)" />
+      </div>
+
+      <div class="ad-card__actions">
+        <q-btn
+          outline
+          round
+          color="grey-7"
+          icon="share"
+          class="ad-card__share"
+          :aria-label="t('common.share')"
+          @click="share(ad)"
+        >
+          <q-tooltip>{{ t('common.share') }}</q-tooltip>
+        </q-btn>
+        <q-btn
+          unelevated
+          no-caps
+          color="primary"
+          icon="call"
+          class="ad-card__call"
+          :label="ad.phone"
+          :href="'tel:' + ad.phone"
+          :aria-label="`${t('ad.call')}: ${ad.phone}`"
+        />
       </div>
     </q-card>
 
     <!-- To'liq asl matn alohida oynada — karta kattalashib ketmasin -->
     <q-dialog v-model="sourceOpen">
       <q-card class="w-full">
-        <q-bar class="bg-primary text-white">
-          <span class="font-bold">{{ t('ad.sourceTitle') }}</span>
+        <div class="flex items-center no-wrap gap-2 px-4 pt-3 pb-2">
+          <q-icon name="send" color="primary" size="20px" />
+          <span class="text-base font-bold">{{ t('ad.sourceTitle') }}</span>
           <q-space />
-          <q-btn v-close-popup flat dense icon="close" :aria-label="t('common.close')" />
-        </q-bar>
-        <q-card-section class="scroll" style="max-height: 70vh">
-          <div class="whitespace-pre-line break-words text-base text-grey-9">{{ sourceFull }}</div>
+          <q-btn v-close-popup flat round dense icon="close" :aria-label="t('common.close')" />
+        </div>
+        <q-card-section class="scroll pt-1" style="max-height: 70vh">
+          <div class="whitespace-pre-line break-words text-[15px] leading-relaxed text-grey-9">{{ sourceFull }}</div>
         </q-card-section>
       </q-card>
     </q-dialog>
@@ -211,6 +195,27 @@ function openSource(text: string) {
   sourceOpen.value = true;
 }
 
+// Kartada faqat to'ldirilgan ma'lumotlar — bo'sh "—" qatorlari o'qishni qiyinlashtiradi
+interface Fact {
+  icon: string;
+  label: string;
+  value: string;
+}
+
+function facts(ad: Advertisement): Fact[] {
+  const clientName = ad.clientName?.trim();
+  return [
+    { icon: 'local_shipping', label: t('ad.truckType'), value: ad.truckType?.join(' / ') ?? '' },
+    { icon: 'inventory_2', label: t('ad.cargoName'), value: cargoText(ad) },
+    { icon: 'event', label: t('ad.loadingTime'), value: formatDate(ad.loadingTime, locale.value) },
+    {
+      icon: 'person',
+      label: t('ad.contactLabel').replace(/:\s*$/, ''),
+      value: clientName && clientName !== '-' ? clientName : '',
+    },
+  ].filter((f) => f.value);
+}
+
 function cargoText(ad: Advertisement): string {
   return [ad.loadName, ad.weight ? `${ad.weight} t` : '', ad.volume ? `${ad.volume} m³` : '']
     .filter(Boolean)
@@ -253,9 +258,120 @@ async function share(ad: Advertisement) {
 </script>
 
 <style scoped>
+/* Grid qatoridagi kartalar bo'yi teng — tugmalar hammasida pastda turadi */
+.ad-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+  padding: 16px;
+  transition:
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+@media (hover: hover) {
+  .ad-card:hover {
+    box-shadow: var(--kt-shadow-hover);
+  }
+}
+.ad-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 24px;
+}
+.ad-card__posted {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--kt-muted);
+  white-space: nowrap;
+}
+
+.ad-card__price {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--kt-surface-2);
+}
+.ad-card__cost {
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  color: var(--kt-primary-dark);
+  overflow-wrap: anywhere;
+}
+.ad-card__cost--none {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--kt-text-2);
+}
+.ad-card__advance {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--kt-muted);
+}
+
+.ad-card__facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 12px;
+}
+.ad-card__fact dt {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--kt-muted);
+}
+.ad-card__fact dd {
+  margin-top: 2px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--kt-text);
+  overflow-wrap: anywhere;
+}
+
+.ad-card__desc {
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--kt-text-2);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.ad-card__source-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--kt-muted);
+}
+
+.ad-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: auto;
+}
+.ad-card__share {
+  flex: none;
+}
+.ad-card__call {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 44px;
+  font-size: 15px;
+}
+
 .ad-new {
   outline: 2px solid var(--q-primary);
-  background-color: #e3f2fd;
+  background-color: var(--kt-primary-soft);
 }
 /* Ko'ringandan keyin oqaradi; oxirgi holat oddiy kartaga teng — sakrash bo'lmaydi */
 .ad-new.ad-seen {

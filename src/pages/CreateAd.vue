@@ -1,277 +1,353 @@
 <template>
-  <q-form ref="formRef" class="flex flex-col p-3 gap-3 max-w-[800px] mx-auto" @submit.prevent="submitAd">
-    <div class="text-lg font-bold">{{ t('ad.newAd') }}</div>
-
-    <q-banner v-if="!auth.isLoggedIn" dense rounded class="bg-blue-1 text-grey-9">
-      <template #avatar><q-icon name="info" color="primary" /></template>
-      {{ t('ad.loginHint') }}
-      <template #action>
-        <q-btn flat color="primary" :label="t('nav.login')" :to="{ path: '/login', query: { redirect: '/create-ads' } }" />
-      </template>
-    </q-banner>
-
-    <!-- Yo'nalish -->
-    <div class="flex gap-4">
-      <q-radio
-        v-model="form.direction"
-        val="international"
-        :label="t('ad.international')"
-        @update:model-value="onDirectionChange"
-      />
-      <q-radio
-        v-model="form.direction"
-        val="intercity"
-        :label="t('ad.intercity')"
-        @update:model-value="onDirectionChange"
-      />
-    </div>
-
-    <!-- Mamlakat (faqat shaharlararo) -->
-    <q-select
-      v-if="form.direction === 'intercity'"
-      v-model="countryId"
-      filled
-      use-input
-      clearable
-      input-debounce="400"
-      :label="t('ad.country')"
-      :options="countryOptions"
-      option-label="label"
-      option-value="value"
-      emit-value
-      map-options
-      behavior="menu"
-      @filter="filterCountry"
-      @update:model-value="onCountryChange"
-      @virtual-scroll="onCountryScroll"
-    >
-      <template #no-option>
-        <q-item>
-          <q-item-section class="text-grey">{{ t('common.noOption') }}</q-item-section>
-        </q-item>
-      </template>
-    </q-select>
-
-    <section class="grid sm:grid-cols-2 gap-3">
-      <!-- Qayerdan -->
-      <q-select
-        v-model="form.fromAddress"
-        filled
-        use-input
-        clearable
-        input-debounce="400"
-        :label="t('ad.fromRequired')"
-        :options="fromOptions"
-        option-label="label"
-        option-value="value"
-        emit-value
-        map-options
-        behavior="menu"
-        :rules="[
-          (v) => !!v || t('common.required'),
-          (v) => !v || v.length >= 2 || t('common.minChars', { n: 2 }),
-        ]"
-        lazy-rules
-        @filter="filterFrom"
-        @virtual-scroll="onFromScroll"
-      >
-        <template #option="{ itemProps, opt }">
-          <q-item v-bind="itemProps">
-            <q-item-section>{{ locationLabel(opt.label) }}</q-item-section>
-          </q-item>
-        </template>
-        <template #no-option>
-          <q-item>
-            <q-item-section class="text-grey">{{ t('common.noOption') }}</q-item-section>
-          </q-item>
-        </template>
-      </q-select>
-
-      <!-- Qayerga -->
-      <q-select
-        v-model="form.toAddress"
-        filled
-        use-input
-        clearable
-        input-debounce="400"
-        :label="t('ad.toRequired')"
-        :options="toOptions"
-        option-label="label"
-        option-value="value"
-        emit-value
-        map-options
-        behavior="menu"
-        :rules="[
-          (v) => !!v || t('common.required'),
-          (v) => !v || v.length >= 2 || t('common.minChars', { n: 2 }),
-        ]"
-        lazy-rules
-        @filter="filterTo"
-        @virtual-scroll="onToScroll"
-      >
-        <template #option="{ itemProps, opt }">
-          <q-item v-bind="itemProps">
-            <q-item-section>{{ locationLabel(opt.label) }}</q-item-section>
-          </q-item>
-        </template>
-        <template #no-option>
-          <q-item>
-            <q-item-section class="text-grey">{{ t('common.noOption') }}</q-item-section>
-          </q-item>
-        </template>
-      </q-select>
-
-      <!-- Mashina turi -->
-      <q-select
-        v-model="form.truckType"
-        filled
-        clearable
-        multiple
-        use-chips
-        :label="t('ad.truckType')"
-        :options="TRUCK_TYPES"
-        behavior="menu"
-      >
-        <template #option="{ itemProps, opt, selected, toggleOption }">
-          <q-item v-bind="itemProps">
-            <q-item-section>{{ opt }}</q-item-section>
-            <q-item-section side>
-              <q-toggle :model-value="selected" @update:model-value="toggleOption(opt)" />
-            </q-item-section>
-          </q-item>
-        </template>
-      </q-select>
-
-      <!-- Yuk nomi -->
-      <q-input
-        v-model="form.loadName"
-        filled
-        :label="t('ad.cargoName')"
-        :rules="[
-          (v) => !v || v.length >= 2 || t('common.minChars', { n: 2 }),
-          (v) => !v || v.length <= 50 || t('common.maxChars', { n: 50 }),
-        ]"
-        lazy-rules
-      />
-
-      <!-- Yuk tavsifi -->
-      <q-input
-        v-model="form.descriptions"
-        filled
-        :label="t('ad.cargoDesc')"
-        type="textarea"
-        rows="2"
-        class="sm:col-span-2"
-        counter
-        maxlength="500"
-        :rules="[(v) => !v || v.length <= 500 || t('common.maxChars', { n: 500 })]"
-        lazy-rules
-      />
-
-      <!-- To'lov turi -->
-      <q-select
-        v-model="form.paymentType"
-        filled
-        :label="t('ad.paymentType')"
-        clearable
-        :options="PAYMENT_TYPES"
-        behavior="menu"
-      />
-
-      <!-- Avans + Narx + Valyuta -->
-      <div class="flex gap-2 items-start">
-        <q-input
-          v-model="form.advance"
-          class="flex-1"
-          filled
-          inputmode="decimal"
-          :label="t('ad.advance')"
-          :rules="[(v) => !v || MONEY_RE.test(v) || t('common.onlyNumber')]"
-          lazy-rules
-        />
-        <q-input
-          v-model="form.deliveryCost"
-          class="flex-1"
-          filled
-          inputmode="decimal"
-          :label="t('ad.price')"
-          :rules="[(v) => !v || MONEY_RE.test(v) || t('common.onlyNumber')]"
-          lazy-rules
-        />
-        <q-select
-          v-model="form.currency"
-          filled
-          :options="CURRENCIES"
-          behavior="menu"
-          style="min-width: 80px"
-        />
+  <q-page class="kt-page">
+    <q-form ref="formRef" class="kt-form" @submit.prevent="submitAd">
+      <div>
+        <div class="kt-page-title">{{ t('ad.newAd') }}</div>
+        <div class="kt-page-subtitle">{{ t('ad.newAdHint') }}</div>
       </div>
 
-      <!-- Hajm va vazn -->
-      <q-input
-        v-model.number="form.volume"
-        filled
-        :label="t('ad.volume')"
-        type="number"
-        :rules="[
-          (v) => v === null || v === '' || v >= 2 || t('ad.minVolume'),
-          (v) => v === null || v === '' || v <= 10000 || t('ad.maxVolume'),
-        ]"
-        lazy-rules
-      />
-      <q-input
-        v-model.number="form.weight"
-        filled
-        :label="t('ad.weight')"
-        type="number"
-        :rules="[
-          (v) => v === null || v === '' || v >= 2 || t('ad.minWeight'),
-          (v) => v === null || v === '' || v <= 50 || t('ad.maxWeight'),
-        ]"
-        lazy-rules
-      />
+      <q-banner v-if="!auth.isLoggedIn" rounded class="kt-hint">
+        <template #avatar><q-icon name="info" color="primary" /></template>
+        {{ t('ad.loginHint') }}
+        <template #action>
+          <q-btn
+            flat
+            color="primary"
+            :label="t('nav.login')"
+            :to="{ path: '/login', query: { redirect: '/create-ads' } }"
+          />
+        </template>
+      </q-banner>
 
-      <!-- Yuklash vaqti -->
-      <q-input v-model="form.loadingTime" filled :label="t('ad.loadingTime')" type="date" />
+      <!-- 1. Yo'nalish -->
+      <q-card class="kt-form-card">
+        <div class="kt-section-title">
+          <q-icon name="alt_route" size="20px" />
+          {{ t('ad.sectionRoute') }}
+        </div>
 
-      <!-- Telefon -->
-      <q-input
-        v-model="form.phone"
-        filled
-        type="tel"
-        :label="t('ad.phoneRequired')"
-        :rules="[
-          (v) => !!v || t('common.required'),
-          (v) => !v || v.length >= 5 || t('ad.minPhone'),
-          (v) => !v || v.length <= 20 || t('ad.maxPhone'),
-        ]"
-        lazy-rules
-      />
+        <q-btn-toggle
+          v-model="form.direction"
+          spread
+          no-caps
+          unelevated
+          class="kt-segment q--avoid-card-border mb-3"
+          toggle-color="primary"
+          color="white"
+          text-color="grey-8"
+          :options="directionOptions"
+          @update:model-value="onDirectionChange"
+        />
 
-      <!-- Mijoz ismi -->
-      <q-input
-        v-model="form.clientName"
-        filled
-        :label="t('ad.contactName')"
-        :rules="[
-          (v) => !v || v.length >= 2 || t('common.minChars', { n: 2 }),
-          (v) => !v || v.length <= 50 || t('common.maxChars', { n: 50 }),
-        ]"
-        lazy-rules
-      />
-    </section>
+        <!-- Mamlakat (faqat shaharlararo) -->
+        <q-select
+          v-if="form.direction === 'intercity'"
+          v-model="countryId"
+          filled
+          use-input
+          clearable
+          input-debounce="400"
+          :label="t('ad.country')"
+          :options="countryOptions"
+          option-label="label"
+          option-value="value"
+          emit-value
+          map-options
+          behavior="menu"
+          class="kt-field"
+          @filter="filterCountry"
+          @update:model-value="onCountryChange"
+          @virtual-scroll="onCountryScroll"
+        >
+          <template #prepend><q-icon name="flag" size="20px" /></template>
+          <template #no-option>
+            <q-item>
+              <q-item-section class="text-grey">{{ t('common.noOption') }}</q-item-section>
+            </q-item>
+          </template>
+        </q-select>
 
-    <div v-if="errorMsg" class="text-negative text-sm">{{ errorMsg }}</div>
+        <div class="grid sm:grid-cols-2 gap-x-3">
+          <!-- Qayerdan -->
+          <q-select
+            v-model="form.fromAddress"
+            filled
+            use-input
+            clearable
+            input-debounce="400"
+            :label="t('ad.fromRequired')"
+            :options="fromOptions"
+            option-label="label"
+            option-value="value"
+            emit-value
+            map-options
+            behavior="menu"
+            :rules="[
+              (v) => !!v || t('common.required'),
+              (v) => !v || v.length >= 2 || t('common.minChars', { n: 2 }),
+            ]"
+            lazy-rules
+            @filter="filterFrom"
+            @virtual-scroll="onFromScroll"
+          >
+            <template #prepend><q-icon name="trip_origin" color="primary" size="20px" /></template>
+            <template #option="{ itemProps, opt }">
+              <q-item v-bind="itemProps">
+                <q-item-section>{{ locationLabel(opt.label) }}</q-item-section>
+              </q-item>
+            </template>
+            <template #no-option>
+              <q-item>
+                <q-item-section class="text-grey">{{ t('common.noOption') }}</q-item-section>
+              </q-item>
+            </template>
+          </q-select>
 
-    <div class="flex justify-end gap-2">
-      <q-btn flat :label="t('ad.reset')" @click="resetForm" />
-      <q-btn color="primary" :label="t('ad.addBtn')" :loading="loading" type="submit" />
-    </div>
-  </q-form>
+          <!-- Qayerga -->
+          <q-select
+            v-model="form.toAddress"
+            filled
+            use-input
+            clearable
+            input-debounce="400"
+            :label="t('ad.toRequired')"
+            :options="toOptions"
+            option-label="label"
+            option-value="value"
+            emit-value
+            map-options
+            behavior="menu"
+            :rules="[
+              (v) => !!v || t('common.required'),
+              (v) => !v || v.length >= 2 || t('common.minChars', { n: 2 }),
+            ]"
+            lazy-rules
+            @filter="filterTo"
+            @virtual-scroll="onToScroll"
+          >
+            <template #prepend><q-icon name="place" color="accent" size="20px" /></template>
+            <template #option="{ itemProps, opt }">
+              <q-item v-bind="itemProps">
+                <q-item-section>{{ locationLabel(opt.label) }}</q-item-section>
+              </q-item>
+            </template>
+            <template #no-option>
+              <q-item>
+                <q-item-section class="text-grey">{{ t('common.noOption') }}</q-item-section>
+              </q-item>
+            </template>
+          </q-select>
+        </div>
+      </q-card>
+
+      <!-- 2. Yuk haqida -->
+      <q-card class="kt-form-card">
+        <div class="kt-section-title">
+          <q-icon name="inventory_2" size="20px" />
+          {{ t('ad.sectionCargo') }}
+        </div>
+
+        <div class="grid sm:grid-cols-2 gap-x-3">
+          <!-- Mashina turi -->
+          <q-select
+            v-model="form.truckType"
+            filled
+            clearable
+            multiple
+            use-chips
+            :label="t('ad.truckType')"
+            :options="TRUCK_TYPES"
+            behavior="menu"
+            class="kt-field"
+          >
+            <template #prepend><q-icon name="local_shipping" size="20px" /></template>
+            <template #option="{ itemProps, opt, selected, toggleOption }">
+              <q-item v-bind="itemProps">
+                <q-item-section>{{ opt }}</q-item-section>
+                <q-item-section side>
+                  <q-toggle :model-value="selected" @update:model-value="toggleOption(opt)" />
+                </q-item-section>
+              </q-item>
+            </template>
+          </q-select>
+
+          <!-- Yuk nomi -->
+          <q-input
+            v-model="form.loadName"
+            filled
+            :label="t('ad.cargoName')"
+            :rules="[
+              (v) => !v || v.length >= 2 || t('common.minChars', { n: 2 }),
+              (v) => !v || v.length <= 50 || t('common.maxChars', { n: 50 }),
+            ]"
+            lazy-rules
+          />
+
+          <!-- Vazn va hajm -->
+          <q-input
+            v-model.number="form.weight"
+            filled
+            :label="t('ad.weight')"
+            type="number"
+            :rules="[
+              (v) => v === null || v === '' || v >= 2 || t('ad.minWeight'),
+              (v) => v === null || v === '' || v <= 50 || t('ad.maxWeight'),
+            ]"
+            lazy-rules
+          >
+            <template #prepend><q-icon name="scale" size="20px" /></template>
+          </q-input>
+          <q-input
+            v-model.number="form.volume"
+            filled
+            :label="t('ad.volume')"
+            type="number"
+            :rules="[
+              (v) => v === null || v === '' || v >= 2 || t('ad.minVolume'),
+              (v) => v === null || v === '' || v <= 10000 || t('ad.maxVolume'),
+            ]"
+            lazy-rules
+          >
+            <template #prepend><q-icon name="view_in_ar" size="20px" /></template>
+          </q-input>
+
+          <!-- Yuklash vaqti -->
+          <q-input
+            v-model="form.loadingTime"
+            filled
+            stack-label
+            :label="t('ad.loadingTime')"
+            type="date"
+            class="kt-field"
+          >
+            <template #prepend><q-icon name="event" size="20px" /></template>
+          </q-input>
+
+          <!-- Yuk tavsifi -->
+          <q-input
+            v-model="form.descriptions"
+            filled
+            autogrow
+            :label="t('ad.cargoDesc')"
+            type="textarea"
+            class="sm:col-span-2"
+            counter
+            maxlength="500"
+            :rules="[(v) => !v || v.length <= 500 || t('common.maxChars', { n: 500 })]"
+            lazy-rules
+          />
+        </div>
+      </q-card>
+
+      <!-- 3. Narx va to'lov -->
+      <q-card class="kt-form-card">
+        <div class="kt-section-title">
+          <q-icon name="payments" size="20px" />
+          {{ t('ad.sectionPrice') }}
+        </div>
+
+        <div class="kt-price-grid">
+          <q-input
+            v-model="form.deliveryCost"
+            filled
+            inputmode="decimal"
+            class="kt-price-grid__cost"
+            :label="t('ad.price')"
+            :rules="[(v) => !v || MONEY_RE.test(v) || t('common.onlyNumber')]"
+            lazy-rules
+          />
+          <q-select
+            v-model="form.currency"
+            filled
+            :options="CURRENCIES"
+            behavior="menu"
+            class="kt-field kt-price-grid__currency"
+          />
+          <q-input
+            v-model="form.advance"
+            filled
+            inputmode="decimal"
+            class="kt-price-grid__advance"
+            :label="t('ad.advance')"
+            :rules="[(v) => !v || MONEY_RE.test(v) || t('common.onlyNumber')]"
+            lazy-rules
+          />
+          <!-- To'lov turi -->
+          <q-select
+            v-model="form.paymentType"
+            filled
+            :label="t('ad.paymentType')"
+            clearable
+            :options="PAYMENT_TYPES"
+            behavior="menu"
+            class="kt-field kt-price-grid__payment"
+          />
+        </div>
+      </q-card>
+
+      <!-- 4. Aloqa -->
+      <q-card class="kt-form-card">
+        <div class="kt-section-title">
+          <q-icon name="call" size="20px" />
+          {{ t('ad.sectionContact') }}
+        </div>
+
+        <div class="grid sm:grid-cols-2 gap-x-3">
+          <!-- Telefon -->
+          <q-input
+            v-model="form.phone"
+            filled
+            type="tel"
+            :label="t('ad.phoneRequired')"
+            :rules="[
+              (v) => !!v || t('common.required'),
+              (v) => !v || v.length >= 5 || t('ad.minPhone'),
+              (v) => !v || v.length <= 20 || t('ad.maxPhone'),
+            ]"
+            lazy-rules
+          >
+            <template #prepend><q-icon name="phone" size="20px" /></template>
+          </q-input>
+
+          <!-- Mijoz ismi -->
+          <q-input
+            v-model="form.clientName"
+            filled
+            :label="t('ad.contactName')"
+            :rules="[
+              (v) => !v || v.length >= 2 || t('common.minChars', { n: 2 }),
+              (v) => !v || v.length <= 50 || t('common.maxChars', { n: 50 }),
+            ]"
+            lazy-rules
+          >
+            <template #prepend><q-icon name="person" size="20px" /></template>
+          </q-input>
+        </div>
+      </q-card>
+
+      <div v-if="errorMsg" class="kt-error">
+        <q-icon name="error_outline" size="20px" />
+        {{ errorMsg }}
+      </div>
+
+      <div class="kt-form-actions">
+        <q-btn outline color="grey-8" icon="restart_alt" :label="t('ad.reset')" @click="resetForm" />
+        <q-btn
+          unelevated
+          color="primary"
+          icon="check"
+          class="kt-form-actions__submit"
+          :label="t('ad.addBtn')"
+          :loading="loading"
+          type="submit"
+        />
+      </div>
+    </q-form>
+  </q-page>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue';
+import { ref, reactive, computed, onMounted } from 'vue';
 import { useQuasar, QForm } from 'quasar';
 import { useI18n } from 'vue-i18n';
 import { apiCreateAd, toLocationRef } from 'src/api';
@@ -316,6 +392,11 @@ interface AdForm {
   phone: string;
   clientName: string;
 }
+
+const directionOptions = computed(() => [
+  { value: 'intercity', label: t('ad.intercity'), icon: 'alt_route' },
+  { value: 'international', label: t('ad.international'), icon: 'public' },
+]);
 
 function savedDirection(): Direction {
   const saved = localStorage.getItem(CREATE_AD_DIRECTION_KEY);
@@ -441,3 +522,96 @@ async function submitAd() {
 
 onMounted(reloadLocations);
 </script>
+
+<style scoped>
+.kt-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 820px;
+  margin: 0 auto;
+}
+/* Qoidasi (rules) bor maydonlar ostida xato uchun 20px joy bor; qoidasiz maydonlarga (.kt-field)
+   ham shuncha joy beramiz — aks holda qatorlar bir tekis turmaydi */
+.kt-form-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px 16px 4px;
+}
+@media (min-width: 600px) {
+  .kt-form-card {
+    padding: 20px 20px 8px;
+  }
+}
+.kt-field {
+  padding-bottom: 20px;
+}
+
+/* Narx | valyuta, keyin avans | to'lov turi; katta ekranda bitta qatorda narx+valyuta */
+.kt-price-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 100px;
+  column-gap: 12px;
+}
+.kt-price-grid__advance,
+.kt-price-grid__payment {
+  grid-column: 1 / -1;
+}
+@media (min-width: 600px) {
+  .kt-price-grid {
+    grid-template-columns: minmax(0, 1fr) 110px minmax(0, 1fr);
+  }
+  .kt-price-grid__advance {
+    grid-column: auto;
+  }
+}
+
+.kt-hint {
+  background: var(--kt-primary-soft);
+  color: var(--kt-text);
+  border-radius: var(--kt-radius-sm);
+}
+.kt-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: var(--kt-radius-sm);
+  background: #fdecec;
+  color: var(--q-negative);
+  font-size: 14px;
+}
+
+/* Telefonda tugmalar ekran pastiga yopishib turadi — uzun formani oxirigacha aylantirish shart emas */
+.kt-form-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  display: flex;
+  gap: 8px;
+  margin: 0 -12px -24px;
+  padding: 12px 12px 16px;
+  background: linear-gradient(to top, var(--kt-bg) 75%, rgba(243, 245, 250, 0));
+}
+.kt-form-actions :deep(.q-btn) {
+  height: 48px;
+}
+.kt-form-actions__submit {
+  flex: 1 1 auto;
+  font-size: 15px;
+}
+@media (min-width: 600px) {
+  .kt-form-actions {
+    position: static;
+    justify-content: flex-end;
+    margin: 0;
+    padding: 0;
+    background: none;
+  }
+  .kt-form-actions__submit {
+    flex: 0 0 auto;
+    padding: 0 28px;
+  }
+}
+</style>

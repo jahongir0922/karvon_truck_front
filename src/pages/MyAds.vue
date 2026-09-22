@@ -1,51 +1,91 @@
 <template>
-  <q-page class="p-3 max-w-[900px] mx-auto">
-    <div class="flex items-center justify-between mb-4">
-      <div class="text-lg font-bold">{{ t('myAds.title') }}</div>
-      <q-btn flat dense round icon="refresh" :loading="loading" :aria-label="t('common.refresh')" @click="loadAds" />
+  <q-page class="kt-page max-w-[960px]">
+    <div class="flex items-center no-wrap gap-2 mb-4">
+      <div class="min-w-0 flex-1">
+        <div class="kt-page-title">{{ t('myAds.title') }}</div>
+        <div v-if="ads.length" class="kt-page-subtitle">{{ t('myAds.count', { n: ads.length }) }}</div>
+      </div>
+      <q-btn
+        flat
+        round
+        icon="refresh"
+        color="grey-8"
+        :loading="loading"
+        :aria-label="t('common.refresh')"
+        @click="loadAds"
+      >
+        <q-tooltip>{{ t('common.refresh') }}</q-tooltip>
+      </q-btn>
+      <q-btn
+        v-if="ads.length && $q.screen.gt.xs"
+        unelevated
+        color="primary"
+        icon="add"
+        :label="t('nav.addLoad')"
+        to="/create-ads"
+      />
     </div>
 
-    <div v-if="loading && !ads.length" class="text-center py-10">
-      <q-spinner size="40px" color="primary" />
+    <div v-if="loading && !ads.length" class="flex flex-col gap-3">
+      <q-card v-for="n in 3" :key="n" class="p-4 flex flex-col gap-3">
+        <q-skeleton type="text" width="55%" height="22px" />
+        <q-skeleton type="text" width="35%" />
+        <q-skeleton type="text" width="25%" />
+      </q-card>
     </div>
 
-    <div v-else-if="!ads.length" class="text-center text-grey-6 py-10">
-      <div class="mb-3">{{ t('myAds.noAds') }}</div>
-      <q-btn color="primary" icon="add" :label="t('nav.addLoad')" to="/create-ads" />
+    <div v-else-if="!ads.length" class="kt-empty">
+      <div class="kt-empty__icon"><q-icon name="inventory_2" size="34px" /></div>
+      <div class="kt-empty__title">{{ t('myAds.noAds') }}</div>
+      <q-btn unelevated color="primary" icon="add" class="mt-2" :label="t('nav.addLoad')" to="/create-ads" />
     </div>
 
     <div v-else class="flex flex-col gap-3">
-      <q-card v-for="ad in ads" :key="ad._id" class="p-4" :class="{ 'opacity-60': !ad.isActive }">
-        <div class="flex justify-between items-start gap-2">
-          <div>
-            <div class="flex items-center gap-1 font-bold text-primary mb-1">
-              <span>{{ ad.fromAddress }}</span>
-              <q-icon name="arrow_forward" />
-              <span>{{ ad.toAddress }}</span>
+      <q-card v-for="ad in ads" :key="ad._id" class="my-ad" :class="{ 'my-ad--inactive': !ad.isActive }">
+        <div class="my-ad__main">
+          <div class="kt-route my-ad__route">
+            <div class="kt-route__point">
+              <span class="kt-route__marker"><span class="kt-route__dot" /></span>
+              <span class="kt-route__name">{{ ad.fromAddress }}</span>
             </div>
-            <div class="text-sm text-grey-7 flex flex-wrap gap-x-4 gap-y-1">
-              <span v-if="ad.truckType?.length">{{ ad.truckType.join(' / ') }}</span>
-              <span v-if="formatMoney(ad.deliveryCost, ad.currency, locale)">
-                {{ formatMoney(ad.deliveryCost, ad.currency, locale) }}
-              </span>
-              <span v-if="ad.phone">{{ ad.phone }}</span>
-              <span v-if="ad.loadingTime">{{ formatDate(ad.loadingTime, locale) }}</span>
-            </div>
-            <div class="text-xs text-grey-6 mt-1">
-              {{ t('ad.postedAt') }} {{ formatDateTime(ad.createdAt, locale) }}
+            <div class="kt-route__point">
+              <span class="kt-route__marker"><span class="kt-route__pin" /></span>
+              <span class="kt-route__name">{{ ad.toAddress }}</span>
             </div>
           </div>
-          <div class="flex items-center gap-2 shrink-0">
-            <q-badge :color="ad.isActive ? 'positive' : 'grey'">
-              {{ ad.isActive ? t('myAds.active') : t('myAds.inactive') }}
-            </q-badge>
+          <span class="kt-tag shrink-0" :class="ad.isActive ? 'kt-tag--positive' : 'kt-tag--muted'">
+            <q-icon :name="ad.isActive ? 'check_circle' : 'pause_circle'" size="14px" />
+            {{ ad.isActive ? t('myAds.active') : t('myAds.inactive') }}
+          </span>
+        </div>
+
+        <div class="my-ad__meta">
+          <span v-if="formatMoney(ad.deliveryCost, ad.currency, locale)" class="my-ad__price">
+            {{ formatMoney(ad.deliveryCost, ad.currency, locale) }}
+          </span>
+          <span v-if="ad.truckType?.length" class="my-ad__meta-item">
+            <q-icon name="local_shipping" size="16px" />{{ ad.truckType.join(' / ') }}
+          </span>
+          <span v-if="ad.loadingTime" class="my-ad__meta-item">
+            <q-icon name="event" size="16px" />{{ formatDate(ad.loadingTime, locale) }}
+          </span>
+          <span v-if="ad.phone" class="my-ad__meta-item">
+            <q-icon name="call" size="16px" />{{ ad.phone }}
+          </span>
+        </div>
+
+        <div class="my-ad__foot q--avoid-card-border">
+          <span class="text-xs kt-muted">
+            {{ t('ad.postedAt') }} {{ formatDateTime(ad.createdAt, locale) }}
+          </span>
+          <div class="flex items-center no-wrap gap-1">
             <q-btn flat round dense icon="edit" color="primary" :aria-label="t('common.edit')" @click="openEdit(ad)">
               <q-tooltip>{{ t('common.edit') }}</q-tooltip>
             </q-btn>
             <q-btn
               flat round dense
               :icon="ad.isActive ? 'visibility_off' : 'visibility'"
-              :color="ad.isActive ? 'grey' : 'positive'"
+              :color="ad.isActive ? 'grey-7' : 'positive'"
               :loading="togglingId === ad._id"
               :aria-label="ad.isActive ? t('myAds.deactivate') : t('myAds.activate')"
               @click="toggleActive(ad)"
@@ -54,7 +94,7 @@
             </q-btn>
             <q-btn
               flat round dense
-              icon="delete"
+              icon="delete_outline"
               color="negative"
               :loading="deletingId === ad._id"
               :aria-label="t('common.delete')"
@@ -69,16 +109,18 @@
 
     <!-- Delete confirm dialog -->
     <q-dialog v-model="deleteDialog">
-      <q-card class="min-w-[280px]">
-        <q-card-section class="text-base">
-          {{ t('myAds.confirmDelete') }}
+      <q-card class="w-full max-w-[400px] p-2">
+        <q-card-section class="flex flex-col items-center text-center gap-2">
+          <div class="kt-danger-icon"><q-icon name="delete_outline" size="28px" /></div>
+          <div class="text-base font-semibold">{{ t('myAds.confirmDelete') }}</div>
+          <div v-if="adToDelete" class="text-sm kt-muted">
+            {{ adToDelete.fromAddress }} → {{ adToDelete.toAddress }}
+          </div>
         </q-card-section>
-        <q-card-section v-if="adToDelete" class="text-sm text-grey-7 pt-0">
-          {{ adToDelete.fromAddress }} → {{ adToDelete.toAddress }}
-        </q-card-section>
-        <q-card-actions align="right">
-          <q-btn v-close-popup flat :label="t('common.cancel')" />
+        <q-card-actions class="grid grid-cols-2 gap-2 px-4 pb-4">
+          <q-btn v-close-popup outline color="grey-8" :label="t('common.cancel')" />
           <q-btn
+            unelevated
             color="negative"
             :label="t('common.delete')"
             :loading="deletingId !== null"
@@ -89,23 +131,28 @@
     </q-dialog>
 
     <!-- Edit dialog -->
-    <q-dialog v-model="editDialog" maximized>
-      <q-card class="flex flex-col">
-        <q-bar class="bg-primary text-white">
-          <span class="font-bold">{{ t('myAds.editTitle') }}</span>
-          <q-space />
-          <q-btn v-close-popup flat dense icon="close" :aria-label="t('common.cancel')" />
-        </q-bar>
+    <q-dialog v-model="editDialog" maximized transition-show="slide-up" transition-hide="slide-down">
+      <q-card class="kt-dialog-full flex flex-col no-wrap bg-[var(--kt-bg)]">
+        <div class="kt-edit-head">
+          <q-btn v-close-popup flat round dense icon="close" :aria-label="t('common.cancel')" />
+          <span class="text-base font-bold">{{ t('myAds.editTitle') }}</span>
+        </div>
 
         <q-scroll-area class="flex-1">
-          <q-form ref="editFormRef" class="flex flex-col p-4 gap-3 max-w-[800px] mx-auto" @submit.prevent="saveEdit">
+          <q-form ref="editFormRef" class="kt-edit-form" @submit.prevent="saveEdit">
 
-            <div class="flex gap-4">
-              <q-radio v-model="editForm.direction" val="international" :label="t('ad.international')"
-                @update:model-value="onEditDirectionChange" />
-              <q-radio v-model="editForm.direction" val="intercity" :label="t('ad.intercity')"
-                @update:model-value="onEditDirectionChange" />
-            </div>
+            <q-btn-toggle
+              v-model="editForm.direction"
+              spread
+              no-caps
+              unelevated
+              class="kt-segment"
+              toggle-color="primary"
+              color="white"
+              text-color="grey-8"
+              :options="directionOptions"
+              @update:model-value="onEditDirectionChange"
+            />
 
             <!-- Mamlakat (faqat shaharlararo) -->
             <q-select
@@ -258,9 +305,17 @@
 
             <div v-if="editError" class="text-negative text-sm">{{ editError }}</div>
 
-            <div class="flex justify-end gap-2">
-              <q-btn v-close-popup flat :label="t('common.cancel')" />
-              <q-btn color="primary" :label="t('common.save')" :loading="saving" type="submit" />
+            <div class="flex justify-end gap-2 pt-2">
+              <q-btn v-close-popup outline color="grey-8" class="h-12 px-5" :label="t('common.cancel')" />
+              <q-btn
+                unelevated
+                color="primary"
+                icon="check"
+                class="h-12 px-6"
+                :label="t('common.save')"
+                :loading="saving"
+                type="submit"
+              />
             </div>
           </q-form>
         </q-scroll-area>
@@ -270,7 +325,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue';
+import { ref, reactive, computed, onMounted } from 'vue';
 import { useQuasar, QForm } from 'quasar';
 import { useI18n } from 'vue-i18n';
 import { apiGetMyAds, apiUpdateAd, apiDeleteAd, toLocationRef } from 'src/api';
@@ -335,6 +390,11 @@ const editForm = reactive<EditForm>({
   phone: '',
   clientName: '',
 });
+
+const directionOptions = computed(() => [
+  { value: 'intercity', label: t('ad.intercity'), icon: 'alt_route' },
+  { value: 'international', label: t('ad.international'), icon: 'public' },
+]);
 
 function locationLabel(label: string) {
   return editForm.direction === 'intercity' ? stripCountry(label) : label;
@@ -504,3 +564,97 @@ async function confirmDelete() {
 
 onMounted(() => { void loadAds(); });
 </script>
+
+<style scoped>
+.my-ad {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 16px 8px;
+  transition: opacity 0.2s ease;
+}
+.my-ad--inactive {
+  background: #fafbfc;
+}
+.my-ad--inactive .my-ad__main,
+.my-ad--inactive .my-ad__meta {
+  opacity: 0.6;
+}
+.my-ad__main {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.my-ad__route {
+  flex: 1 1 auto;
+}
+.my-ad__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 16px;
+  font-size: 14px;
+  color: var(--kt-text-2);
+}
+.my-ad__meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.my-ad__meta-item .q-icon {
+  color: var(--kt-muted);
+}
+.my-ad__price {
+  font-weight: 800;
+  color: var(--kt-primary-dark);
+}
+.my-ad__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 6px;
+  border-top: 1px solid var(--kt-border);
+}
+
+.kt-danger-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  margin-bottom: 4px;
+  border-radius: 50%;
+  background: #fdecec;
+  color: var(--q-negative);
+}
+
+.kt-edit-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 56px;
+  padding: 0 12px;
+  background: var(--kt-surface);
+  border-bottom: 1px solid var(--kt-border);
+}
+.kt-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 820px;
+  margin: 16px auto;
+  padding: 16px;
+  border: 1px solid var(--kt-border);
+  border-radius: var(--kt-radius);
+  background: var(--kt-surface);
+}
+@media (max-width: 599px) {
+  .kt-edit-form {
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+  }
+}
+</style>

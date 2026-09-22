@@ -1,28 +1,30 @@
 <template>
   <main>
     <!-- Filter drawer -->
-    <q-drawer v-model="drawerOpen" overlay :width="320" side="right" bordered>
-      <div class="p-3">
-        <div class="flex justify-between items-center mb-3">
-          <span class="font-bold text-lg">{{ t('index.filterTitle') }}</span>
-          <q-btn flat dense icon="close" :aria-label="t('common.cancel')" @click="drawerOpen = false" />
-        </div>
-        <div class="flex flex-col gap-3">
-          <!-- Yo'nalish -->
-          <div class="flex gap-4">
-            <q-radio
-              v-model="direction"
-              val="international"
-              :label="t('ad.international')"
-              @update:model-value="onDirectionChange"
-            />
-            <q-radio
-              v-model="direction"
-              val="intercity"
-              :label="t('ad.intercity')"
-              @update:model-value="onDirectionChange"
-            />
+    <q-drawer v-model="drawerOpen" overlay :width="340" side="right" class="kt-filter">
+      <div class="kt-filter__inner">
+        <div class="kt-filter__head">
+          <div class="kt-section-title text-lg">
+            <q-icon name="tune" size="22px" />
+            {{ t('index.filterTitle') }}
           </div>
+          <q-btn flat round dense icon="close" :aria-label="t('common.close')" @click="drawerOpen = false" />
+        </div>
+
+        <div class="kt-filter__body">
+          <!-- Yo'nalish -->
+          <q-btn-toggle
+            v-model="direction"
+            spread
+            no-caps
+            unelevated
+            class="kt-segment"
+            toggle-color="primary"
+            color="white"
+            text-color="grey-8"
+            :options="directionOptions"
+            @update:model-value="onDirectionChange"
+          />
 
           <!-- Mamlakat (faqat shaharlararo) -->
           <q-select
@@ -43,6 +45,7 @@
             @update:model-value="onCountryChange"
             @virtual-scroll="onCountryScroll"
           >
+            <template #prepend><q-icon name="flag" size="20px" /></template>
             <template #no-option>
               <q-item>
                 <q-item-section class="text-grey">{{ t('common.noOption') }}</q-item-section>
@@ -67,6 +70,7 @@
             @virtual-scroll="onFromScroll"
             @update:model-value="onLocationFilterChange"
           >
+            <template #prepend><q-icon name="trip_origin" color="primary" size="20px" /></template>
             <template #option="{ itemProps, opt }">
               <q-item v-bind="itemProps">
                 <q-item-section>{{ locationLabel(opt.label) }}</q-item-section>
@@ -96,6 +100,7 @@
             @virtual-scroll="onToScroll"
             @update:model-value="onLocationFilterChange"
           >
+            <template #prepend><q-icon name="place" color="accent" size="20px" /></template>
             <template #option="{ itemProps, opt }">
               <q-item v-bind="itemProps">
                 <q-item-section>{{ locationLabel(opt.label) }}</q-item-section>
@@ -117,117 +122,171 @@
             :label="t('ad.truckType')"
             :options="TRUCK_TYPES"
             behavior="menu"
-          />
+          >
+            <template #prepend><q-icon name="local_shipping" size="20px" /></template>
+          </q-select>
+
           <div class="grid grid-cols-2 gap-2">
-            <q-input v-model.number="filters.priceFrom" :label="t('index.minPrice')" type="number" />
-            <q-input v-model.number="filters.priceTo" :label="t('index.maxPrice')" type="number" />
+            <q-input v-model.number="filters.priceFrom" filled :label="t('index.minPrice')" type="number" />
+            <q-input v-model.number="filters.priceTo" filled :label="t('index.maxPrice')" type="number" />
           </div>
           <div class="grid grid-cols-2 gap-2">
-            <q-input v-model.number="filters.weightFrom" :label="t('index.minWeight')" type="number" />
-            <q-input v-model.number="filters.weightTo" :label="t('index.maxWeight')" type="number" />
+            <q-input v-model.number="filters.weightFrom" filled :label="t('index.minWeight')" type="number" />
+            <q-input v-model.number="filters.weightTo" filled :label="t('index.maxWeight')" type="number" />
           </div>
-          <q-btn color="primary" :label="t('common.apply')" @click="drawerOpen = false" />
-          <q-btn flat :label="t('common.clear')" @click="resetFilters" />
+        </div>
+
+        <div class="kt-filter__foot">
+          <q-btn outline color="grey-8" class="flex-1" :label="t('common.clear')" @click="resetFilters" />
+          <q-btn unelevated color="primary" class="flex-[2]" :label="t('common.apply')" @click="drawerOpen = false" />
         </div>
       </div>
     </q-drawer>
 
-    <q-page class="p-3">
+    <q-page class="kt-page">
       <!-- Direction selection screen -->
-      <div v-if="!directionChosen" class="flex flex-col h-[85vh] justify-center items-center gap-4">
-        <div class="text-xl font-bold text-center">{{ t('index.chooseDirection') }}</div>
-        <div class="flex gap-4">
-          <q-radio v-model="direction" val="international" :label="t('ad.international')" />
-          <q-radio v-model="direction" val="intercity" :label="t('ad.intercity')" />
+      <div v-if="!directionChosen" class="kt-choose">
+        <div class="kt-choose__icon"><q-icon name="local_shipping" size="40px" /></div>
+        <div class="kt-page-title text-center">{{ t('index.chooseDirection') }}</div>
+        <div class="kt-page-subtitle text-center">{{ t('index.chooseDirectionHint') }}</div>
+        <div class="kt-choose__options">
+          <button
+            v-for="opt in directionCards"
+            :key="opt.value"
+            type="button"
+            class="kt-choose__card"
+            @click="chooseDirection(opt.value)"
+          >
+            <span class="kt-choose__card-icon" :class="`kt-choose__card-icon--${opt.value}`">
+              <q-icon :name="opt.icon" size="28px" />
+            </span>
+            <span class="min-w-0 flex-1 text-left">
+              <span class="block text-base font-bold text-[var(--kt-text)]">{{ opt.label }}</span>
+              <span class="block text-sm kt-muted">{{ opt.hint }}</span>
+            </span>
+            <q-icon name="chevron_right" size="24px" class="kt-muted" />
+          </button>
         </div>
-        <q-btn
-          color="primary"
-          :label="t('index.continue')"
-          class="min-w-[150px]"
-          @click="confirmDirection"
-        />
       </div>
 
       <!-- Ads view -->
       <template v-else>
-        <div class="flex gap-2 mb-3 items-center flex-wrap">
-          <div class="flex gap-4">
-            <q-radio
-              v-model="direction"
-              val="international"
-              :label="t('ad.international')"
-              @update:model-value="onDirectionChange"
-            />
-            <q-radio
-              v-model="direction"
-              val="intercity"
-              :label="t('ad.intercity')"
-              @update:model-value="onDirectionChange"
-            />
+        <div class="kt-toolbar">
+          <q-btn-toggle
+            v-model="direction"
+            no-caps
+            unelevated
+            :spread="$q.screen.lt.lg"
+            class="kt-segment kt-toolbar__direction"
+            toggle-color="primary"
+            color="white"
+            text-color="grey-8"
+            :options="directionOptions"
+            @update:model-value="onDirectionChange"
+          />
+
+          <q-input
+            v-model="filters.q"
+            filled
+            dense
+            clearable
+            debounce="300"
+            :placeholder="t('index.searchPlaceholder')"
+            class="kt-toolbar__search"
+          >
+            <template #prepend><q-icon name="search" /></template>
+          </q-input>
+
+          <div class="kt-toolbar__actions">
+            <q-btn
+              unelevated
+              no-caps
+              class="kt-filter-btn"
+              :class="{ 'kt-filter-btn--active': activeFilterCount > 0 }"
+              icon="tune"
+              :label="$q.screen.gt.xs ? t('index.filterTitle') : undefined"
+              :aria-label="t('index.filterTitle')"
+              @click="drawerOpen = true"
+            >
+              <q-badge v-if="activeFilterCount > 0" color="primary" floating rounded>
+                {{ activeFilterCount }}
+              </q-badge>
+            </q-btn>
+            <q-btn
+              flat
+              round
+              icon="refresh"
+              color="grey-8"
+              :loading="loading"
+              :aria-label="t('common.refresh')"
+              @click="loadAds"
+            >
+              <q-tooltip>{{ t('common.refresh') }}</q-tooltip>
+            </q-btn>
           </div>
+        </div>
+
+        <div class="kt-summary">
+          <span v-if="allAds.length" class="kt-muted">
+            {{ t('index.shown', { n: filteredAds.length }) }}
+          </span>
           <q-space />
-          <q-icon
-            :name="wsConnected ? 'wifi' : 'wifi_off'"
-            :color="wsConnected ? 'positive' : 'grey'"
-            size="18px"
-          >
+          <span class="kt-live" :class="{ 'kt-live--on': wsConnected }">
+            <span class="kt-live__dot" />
+            {{ t('index.live') }}
             <q-tooltip>{{ wsConnected ? t('index.liveOn') : t('index.liveOff') }}</q-tooltip>
-          </q-icon>
-          <q-btn
-            flat
-            dense
-            round
-            icon="refresh"
-            :loading="loading"
-            :aria-label="t('common.refresh')"
-            @click="loadAds"
-          >
-            <q-tooltip>{{ t('common.refresh') }}</q-tooltip>
-          </q-btn>
-          <q-btn
-            flat
-            dense
-            round
-            icon="filter_list"
-            :aria-label="t('index.filterTitle')"
-            @click="drawerOpen = true"
-          >
-            <q-badge v-if="activeFilterCount > 0" color="negative" floating>
-              {{ activeFilterCount }}
-            </q-badge>
-          </q-btn>
+          </span>
         </div>
 
-        <q-input
-          v-model="filters.q"
-          dense
-          outlined
-          clearable
-          debounce="300"
-          :placeholder="t('index.searchPlaceholder')"
-          class="mb-2"
+        <!-- Faol filtrlar: bir bosishda olib tashlash mumkin -->
+        <div v-if="filterChips.length" class="kt-chips">
+          <q-chip
+            v-for="chip in filterChips"
+            :key="chip.key"
+            removable
+            class="kt-chip"
+            :icon="chip.icon"
+            @remove="chip.remove()"
+          >
+            {{ chip.label }}
+          </q-chip>
+          <q-btn flat dense no-caps size="sm" color="primary" :label="t('common.clear')" @click="resetFilters" />
+        </div>
+
+        <!-- Birinchi yuklanish: kartalar o'rnida skelet -->
+        <div
+          v-if="loading && !allAds.length"
+          class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4"
         >
-          <template #prepend><q-icon name="search" /></template>
-        </q-input>
-
-        <div v-if="allAds.length" class="text-xs text-grey-6 mb-3">
-          {{ t('index.shown', { n: filteredAds.length }) }}
+          <q-card v-for="n in 8" :key="n" class="p-4 flex flex-col gap-3">
+            <q-skeleton type="text" width="40%" />
+            <q-skeleton type="text" width="80%" height="22px" />
+            <q-skeleton type="text" width="70%" height="22px" />
+            <q-skeleton height="56px" class="rounded-xl" />
+            <q-skeleton type="text" width="60%" />
+            <q-skeleton height="44px" class="rounded-xl" />
+          </q-card>
         </div>
 
-        <div v-if="!allAds.length && !loading" class="text-center text-grey-6 py-10">
-          {{ t('index.noAds') }}
+        <div v-else-if="!allAds.length && !loading" class="kt-empty">
+          <div class="kt-empty__icon"><q-icon name="inventory_2" size="34px" /></div>
+          <div class="kt-empty__title">{{ t('index.noAds') }}</div>
         </div>
 
         <ads-card :ads="filteredAds" :highlight-ids="highlightIds" @seen="onAdSeen" />
 
-        <div v-if="filteredAds.length === 0 && allAds.length > 0" class="text-center text-grey-6 py-10">
-          {{ t('index.noFilteredAds') }}
+        <div v-if="filteredAds.length === 0 && allAds.length > 0" class="kt-empty">
+          <div class="kt-empty__icon"><q-icon name="search_off" size="34px" /></div>
+          <div class="kt-empty__title">{{ t('index.noFilteredAds') }}</div>
+          <q-btn outline color="primary" class="mt-2" :label="t('common.clear')" @click="resetFilters" />
         </div>
 
-        <div v-if="hasMore" class="flex justify-center py-4">
+        <div v-if="hasMore" class="flex justify-center pt-6 pb-2">
           <q-btn
-            flat
+            outline
             color="primary"
+            icon="expand_more"
+            class="px-4"
             :label="t('index.loadMore')"
             :loading="loadingMore"
             @click="loadMoreAds"
@@ -239,12 +298,13 @@
       <q-page-sticky position="top" :offset="[0, 12]">
         <transition name="new-ads">
           <q-btn
-            v-if="hasNewAds"
+            v-if="hasNewAds && directionChosen"
             rounded
             no-caps
+            unelevated
             color="primary"
             icon="arrow_upward"
-            class="shadow-4"
+            class="kt-new-ads"
             :label="t('index.newAds', { n: newAdsLabel })"
             @click="showNewAds"
           />
@@ -275,6 +335,15 @@ function locationLabel(label: string) {
 const savedDirection = localStorage.getItem(DIRECTION_KEY);
 const direction = ref<Direction>(isDirection(savedDirection) ? savedDirection : 'intercity');
 const directionChosen = ref(isDirection(savedDirection));
+
+const directionOptions = computed(() => [
+  { value: 'intercity', label: t('ad.intercity'), icon: 'alt_route' },
+  { value: 'international', label: t('ad.international'), icon: 'public' },
+]);
+const directionCards = computed(() => [
+  { value: 'intercity' as const, label: t('ad.intercity'), hint: t('index.intercityHint'), icon: 'alt_route' },
+  { value: 'international' as const, label: t('ad.international'), hint: t('index.internationalHint'), icon: 'public' },
+]);
 
 // ─── Country selector ─────────────────────────────────────────────────────────
 const { countryId, countryOptions, loadDefaultCountry, filterCountry, onCountryScroll } =
@@ -372,6 +441,81 @@ const activeFilterCount = computed(() => {
   return n;
 });
 
+// Faol filtrlar chip ko'rinishida — har birini alohida olib tashlash mumkin
+interface FilterChip {
+  key: string;
+  icon: string;
+  label: string;
+  remove: () => void;
+}
+
+function rangeLabel(from: number | null, to: number | null, unit = ''): string {
+  const hasFrom = typeof from === 'number';
+  const hasTo = typeof to === 'number';
+  if (hasFrom && hasTo) return `${from} – ${to}${unit}`;
+  if (hasFrom) return `≥ ${from}${unit}`;
+  return `≤ ${to}${unit}`;
+}
+
+const filterChips = computed<FilterChip[]>(() => {
+  const chips: FilterChip[] = [];
+  if (filters.fromAddress) {
+    chips.push({
+      key: 'from',
+      icon: 'trip_origin',
+      label: locationLabel(filters.fromAddress),
+      remove: () => {
+        filters.fromAddress = '';
+        onLocationFilterChange();
+      },
+    });
+  }
+  if (filters.toAddress) {
+    chips.push({
+      key: 'to',
+      icon: 'place',
+      label: locationLabel(filters.toAddress),
+      remove: () => {
+        filters.toAddress = '';
+        onLocationFilterChange();
+      },
+    });
+  }
+  for (const type of filters.truckType ?? []) {
+    chips.push({
+      key: `truck-${type}`,
+      icon: 'local_shipping',
+      label: type,
+      remove: () => {
+        filters.truckType = (filters.truckType ?? []).filter((x) => x !== type);
+      },
+    });
+  }
+  if (typeof filters.priceFrom === 'number' || typeof filters.priceTo === 'number') {
+    chips.push({
+      key: 'price',
+      icon: 'payments',
+      label: rangeLabel(filters.priceFrom, filters.priceTo),
+      remove: () => {
+        filters.priceFrom = null;
+        filters.priceTo = null;
+      },
+    });
+  }
+  if (typeof filters.weightFrom === 'number' || typeof filters.weightTo === 'number') {
+    chips.push({
+      key: 'weight',
+      icon: 'scale',
+      label: rangeLabel(filters.weightFrom, filters.weightTo, ' t'),
+      remove: () => {
+        filters.weightFrom = null;
+        filters.weightTo = null;
+      },
+    });
+  }
+  return chips;
+});
+
 // Tanlangan manzil (ID'lari bilan). Bazadagi e'lon manzili "TOSHKENT" yoki
 // "Uzbekistan, Tashkent" deb yozilgan bo'lsa ham, taqqoslash ID bo'yicha ketadi.
 const selectedFrom = computed<LocationResult | null>(() => pickLocation(filters.fromAddress));
@@ -459,7 +603,9 @@ const newAdsLabel = computed(() =>
 );
 
 // ─── Methods ──────────────────────────────────────────────────────────────────
-function confirmDirection() {
+// Birinchi ekrandagi kartalardan biri bosilganda — bir bosishda tanlab, e'lonlarga o'tamiz
+function chooseDirection(value: Direction) {
+  direction.value = value;
   localStorage.setItem(DIRECTION_KEY, direction.value);
   directionChosen.value = true;
   void loadAds();
@@ -745,6 +891,225 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+/* ─── Yo'nalish tanlash ekrani ─── */
+.kt-choose {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: calc(100vh - 200px);
+  max-width: 480px;
+  margin: 0 auto;
+}
+.kt-choose__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 80px;
+  height: 80px;
+  margin-bottom: 16px;
+  border-radius: 24px;
+  background: var(--kt-primary-soft);
+  color: var(--kt-primary);
+}
+.kt-choose__options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  margin-top: 24px;
+}
+.kt-choose__card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 16px;
+  border: 1px solid var(--kt-border);
+  border-radius: var(--kt-radius);
+  background: var(--kt-surface);
+  box-shadow: var(--kt-shadow);
+  font: inherit;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
+}
+.kt-choose__card:hover {
+  border-color: var(--kt-primary);
+  box-shadow: var(--kt-shadow-hover);
+}
+.kt-choose__card:active {
+  transform: scale(0.99);
+}
+.kt-choose__card:focus-visible {
+  outline: 3px solid rgba(36, 89, 224, 0.35);
+  outline-offset: 2px;
+}
+.kt-choose__card-icon {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+}
+.kt-choose__card-icon--intercity {
+  background: var(--kt-primary-soft);
+  color: var(--kt-primary);
+}
+.kt-choose__card-icon--international {
+  background: var(--kt-teal-soft);
+  color: #0b7a6b;
+}
+
+/* ─── Asboblar paneli: yo'nalish, qidiruv, filtr ─── */
+.kt-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'direction direction'
+    'search actions';
+  gap: 10px;
+  align-items: center;
+}
+@media (min-width: 1024px) {
+  .kt-toolbar {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas: 'direction search actions';
+    gap: 12px;
+  }
+}
+.kt-toolbar__direction {
+  grid-area: direction;
+}
+.kt-toolbar__search {
+  grid-area: search;
+}
+.kt-toolbar__search :deep(.q-field__control) {
+  background: var(--kt-surface);
+  height: 44px;
+}
+.kt-toolbar__search :deep(.q-field__marginal) {
+  height: 44px;
+}
+.kt-toolbar__actions {
+  grid-area: actions;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+
+.kt-filter-btn {
+  height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--kt-border);
+  background: var(--kt-surface);
+  color: var(--kt-text-2);
+}
+.kt-filter-btn--active {
+  border-color: var(--kt-primary);
+  background: var(--kt-primary-soft);
+  color: var(--kt-primary);
+}
+
+.kt-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 24px;
+  margin: 14px 2px 10px;
+  font-size: 13px;
+}
+.kt-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--kt-muted);
+}
+.kt-live__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #b5bdcb;
+}
+.kt-live--on {
+  color: #15803d;
+}
+.kt-live--on .kt-live__dot {
+  background: #16a34a;
+  box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.5);
+  animation: kt-pulse 2s infinite;
+}
+@keyframes kt-pulse {
+  70% {
+    box-shadow: 0 0 0 6px rgba(22, 163, 74, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(22, 163, 74, 0);
+  }
+}
+
+.kt-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: -2px 0 14px;
+}
+.kt-chip {
+  height: 30px;
+  margin: 0;
+  padding: 0 10px;
+  border: 1px solid #cdd9fb;
+  background: var(--kt-surface);
+  color: var(--kt-primary-dark);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* ─── Filtr paneli ─── */
+.kt-filter__inner {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.kt-filter__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 16px 8px;
+}
+.kt-filter__body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 8px 16px 16px;
+}
+.kt-filter__foot {
+  display: flex;
+  gap: 8px;
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--kt-border);
+  background: var(--kt-surface);
+}
+.kt-filter__foot :deep(.q-btn) {
+  height: 44px;
+}
+
+.kt-new-ads {
+  padding: 6px 16px;
+  box-shadow: 0 8px 24px rgba(36, 89, 224, 0.35);
+}
+
 /* "Yangi e'lonlar" tugmasi paydo bo'lishi va yo'qolishi */
 .new-ads-enter-active,
 .new-ads-leave-active {

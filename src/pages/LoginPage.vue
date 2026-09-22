@@ -1,10 +1,27 @@
 <template>
-  <div class="flex flex-col items-center justify-center min-h-screen bg-grey-2 p-4 gap-3">
-    <q-card class="w-full max-w-[400px] p-4">
-      <q-tabs v-model="tab" dense class="text-primary mb-4" @update:model-value="clearErrors">
-        <q-tab name="login" :label="t('auth.loginTab')" />
-        <q-tab name="register" :label="t('auth.registerTab')" />
-      </q-tabs>
+  <div class="kt-auth">
+    <router-link to="/" class="kt-auth__brand">
+      <img src="favicon.svg" alt="" class="kt-auth__logo" />
+      <span>Karvon<span class="kt-auth__brand-accent">Truck</span></span>
+    </router-link>
+    <div class="kt-auth__tagline">{{ t('auth.tagline') }}</div>
+
+    <q-card class="kt-auth__card">
+      <q-btn-toggle
+        v-model="tab"
+        spread
+        no-caps
+        unelevated
+        class="kt-segment q--avoid-card-border mb-5"
+        toggle-color="primary"
+        color="white"
+        text-color="grey-8"
+        :options="[
+          { value: 'login', label: t('auth.loginTab') },
+          { value: 'register', label: t('auth.registerTab') },
+        ]"
+        @update:model-value="clearErrors"
+      />
 
       <q-tab-panels v-model="tab" animated>
         <!-- Login -->
@@ -18,7 +35,9 @@
               autocomplete="email"
               :error="!!errors.email"
               :error-message="errors.email"
-            />
+            >
+              <template #prepend><q-icon name="mail_outline" size="20px" /></template>
+            </q-input>
             <q-input
               v-model="loginForm.password"
               filled
@@ -28,6 +47,7 @@
               :error="!!errors.password"
               :error-message="errors.password"
             >
+              <template #prepend><q-icon name="lock_outline" size="20px" /></template>
               <template #append>
                 <q-icon
                   :name="showPass ? 'visibility_off' : 'visibility'"
@@ -38,11 +58,15 @@
                 />
               </template>
             </q-input>
-            <div v-if="errors.general" class="text-negative text-sm">{{ errors.general }}</div>
+            <div v-if="errors.general" class="kt-auth__error">
+              <q-icon name="error_outline" size="18px" />
+              {{ errors.general }}
+            </div>
             <q-btn
+              unelevated
               color="primary"
+              class="w-full h-12 text-[15px]"
               :label="t('auth.loginBtn')"
-              class="w-full"
               :loading="loading"
               type="submit"
             />
@@ -59,7 +83,9 @@
               autocomplete="name"
               :error="!!errors.name"
               :error-message="errors.name"
-            />
+            >
+              <template #prepend><q-icon name="person_outline" size="20px" /></template>
+            </q-input>
             <q-input
               v-model="registerForm.email"
               filled
@@ -68,7 +94,9 @@
               autocomplete="email"
               :error="!!errors.email"
               :error-message="errors.email"
-            />
+            >
+              <template #prepend><q-icon name="mail_outline" size="20px" /></template>
+            </q-input>
             <q-input
               v-model="registerForm.password"
               filled
@@ -78,6 +106,7 @@
               :error="!!errors.password"
               :error-message="errors.password"
             >
+              <template #prepend><q-icon name="lock_outline" size="20px" /></template>
               <template #append>
                 <q-icon
                   :name="showPass ? 'visibility_off' : 'visibility'"
@@ -88,11 +117,15 @@
                 />
               </template>
             </q-input>
-            <div v-if="errors.general" class="text-negative text-sm">{{ errors.general }}</div>
+            <div v-if="errors.general" class="kt-auth__error">
+              <q-icon name="error_outline" size="18px" />
+              {{ errors.general }}
+            </div>
             <q-btn
+              unelevated
               color="primary"
+              class="w-full h-12 text-[15px]"
               :label="t('auth.registerBtn')"
-              class="w-full"
               :loading="loading"
               type="submit"
             />
@@ -101,7 +134,7 @@
       </q-tab-panels>
     </q-card>
 
-    <q-btn flat no-caps color="primary" icon="arrow_back" :label="t('common.goHome')" to="/" />
+    <q-btn flat no-caps class="kt-auth__home" icon="arrow_back" :label="t('common.goHome')" to="/" />
   </div>
 </template>
 
@@ -190,3 +223,71 @@ onMounted(() => {
   if (auth.isLoggedIn) void router.replace(redirectTarget());
 });
 </script>
+
+<style scoped>
+.kt-auth {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 100vh;
+  padding: 24px 16px;
+  background:
+    radial-gradient(1200px 600px at 10% -10%, rgba(255, 255, 255, 0.18), transparent 60%),
+    linear-gradient(160deg, #2459e0 0%, #1a44b3 55%, #13307f 100%);
+}
+.kt-auth__brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #fff;
+}
+.kt-auth__brand-accent {
+  color: #ffd27a;
+}
+.kt-auth__logo {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.25);
+}
+.kt-auth__tagline {
+  max-width: 360px;
+  margin-bottom: 16px;
+  text-align: center;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.8);
+}
+.kt-auth__card {
+  width: 100%;
+  max-width: 420px;
+  padding: 20px;
+  border: 0;
+  border-radius: 20px;
+  box-shadow: 0 24px 64px rgba(8, 20, 60, 0.35);
+}
+.kt-auth__card :deep(.q-tab-panels) {
+  background: transparent;
+}
+.kt-auth__card .kt-segment {
+  background: var(--kt-surface-2);
+}
+.kt-auth__error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #fdecec;
+  color: var(--q-negative);
+  font-size: 14px;
+}
+.kt-auth__home {
+  margin-top: 8px;
+  color: rgba(255, 255, 255, 0.9);
+}
+</style>
