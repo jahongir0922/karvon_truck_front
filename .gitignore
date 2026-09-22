@@ -3,3 +3,4 @@ package-lock.json
 .env
 dist/
 .quasar/
+/quasar.config.*.temporary.compiled*
